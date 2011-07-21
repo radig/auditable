@@ -30,7 +30,7 @@
  * @package radig
  * @subpackage auditable.models.behaviors
  */
-class Auditable extends ModelBehavior
+class AuditableBehavior extends ModelBehavior
 {
 	public $settings = array();
 	
@@ -75,7 +75,7 @@ class Auditable extends ModelBehavior
 		
 		$this->settings[$Model->alias] = array_merge($this->defaults, $config);
 		
-		if(!$this->settings[$Model->alias]['staticNotation'])
+		if($this->settings[$Model->alias]['staticNotation'])
 		{
 			App::import('Model', $this->settings[$Model->alias]['userModel']);
 			
@@ -96,6 +96,8 @@ class Auditable extends ModelBehavior
 			return false;
 		
 		$this->_User = $userData;
+		
+		return true;
 	}
 	
 	public function beforeSave(&$Model)
