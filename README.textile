@@ -1,0 +1,18 @@
+h1. CakePHP Auditable
+
+Este plugin inclui funções para tornar a auditoria de sistemas em CakePHP mais simples.
+A ideia central é manter a informação de qual usuário fez o quê, e quando isso foi feito.
+
+h2. Autor e Copyright
+
+* *Copyright 2011,* "*Radig - Soluções em TI*":http://www.radig.com.br
+* Licença MIT - Isto quer dizer que o código está disponível sem nenhuma garantia, ao mesmo tempo que
+você pode usa-lo de forma isolada ou em conjunto com seu próprio código.
+
+h2. Observações
+
+* Este behavior requer PHP versão >= 5.3.1
+
+h2. Como usar
+
+* *Encontra-se em desenvolvimento, em breve disponibilizaremos mais detalhes*
