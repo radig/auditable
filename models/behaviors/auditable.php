@@ -90,11 +90,10 @@ class AuditableBehavior extends ModelBehavior
 	 * 
 	 * @param array $userData
 	 */
-	public function setActiveUser($userData = array())
+	public function setActiveUser(&$Model, $userData = array())
 	{
 		if(empty($userData) || !is_array($userData))
 			return false;
-		
 		$this->_User = $userData;
 		
 		return true;
