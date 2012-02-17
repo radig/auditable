@@ -48,7 +48,14 @@ class AuditableBehavior extends ModelBehavior
 	 * @var array
 	 */
 	protected $defaults = array(
-		'format' => ':action record with :data',
+		'formats' => array(
+			'general' => 'record :action :data',
+			'prepend' => 'field',
+			'pospend' => "\n",
+			'create' => ":field as ':value'",
+			'modify' => ":field from ':old' to ':new'",
+			'delete' => ":field as ':value'"
+		),
 		'skip' => array(),
 		'fields' => array(
 			'created' => 'created_by',
@@ -309,7 +316,7 @@ class AuditableBehavior extends ModelBehavior
 				unset($diff[$field]);
 		}
 		
-		$msg = $this->buildHumanMessage($this->settings[$Model->alias]['format'], $action, $diff);
+		$msg = $this->buildHumanMessage($this->settings[$Model->alias]['formats'], $action, $diff);
 		
 		$ds = $Model->getDataSource();
 		$statement = '';
@@ -350,7 +357,8 @@ class AuditableBehavior extends ModelBehavior
 	{
 		$placeHolders = array();
 		$humanDiff = '';
-		$fieldLiteral = __d('auditable', 'field');
+		$prepend = __d('auditable', $tmpl['prepend']) . ' ';
+		$pospend = ' ' . __d('auditable', $tmpl['pospend']);
 		
 		switch($action)
 		{
@@ -358,7 +366,7 @@ class AuditableBehavior extends ModelBehavior
 				$placeHolders['action'] = __d('auditable', 'modified');
 				
 				foreach($diff as $field => $changes)
-					$humanDiff .= $fieldLiteral . " $field ({$changes['old']} -> {$changes['new']})\n";
+					$humanDiff .= $prepend . String::insert($tmpl['modify'], array('field' => $field, 'old' => $changes['old'], 'new' => $changes['new'])) . $pospend;
 				
 				break;
 				
@@ -370,7 +378,7 @@ class AuditableBehavior extends ModelBehavior
 					$placeHolders['action'] = __d('auditable', 'deleted');
 				
 				foreach($diff as $field => $value)
-					$humanDiff .= $fieldLiteral . " $field ($value)\n";
+					$humanDiff .= $prepend . String::insert($tmpl[$action], compact('field', 'value')) . $pospend;
 				
 				break;
 				
@@ -382,7 +390,7 @@ class AuditableBehavior extends ModelBehavior
 		
 		$placeHolders['data'] = $humanDiff;
 		
-		$msg = String::insert(__d('auditable', $tmpl), $placeHolders);
+		$msg = String::insert(__d('auditable', $tmpl['general']), $placeHolders);
 		
 		return $msg;
 	}

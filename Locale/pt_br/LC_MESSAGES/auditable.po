@@ -1,5 +1,3 @@
-msgid ":action record with :data"
-msgstr ":action registro com :data"
 msgid "created"
 msgstr "criado"
 msgid "modified"
@@ -8,5 +6,13 @@ msgid "deleted"
 msgstr "excluído"
 msgid "field"
 msgstr "campo"
+
+msgid 'record :action :data'
+msgstr 'registro :action :data'
+msgid ":field as ':value'",
+msgstr ":field com ':value'"
+msgid ":field from ':old' to ':new'"
+msgstr ":field de ':old' para ':new'"
+
 msgid "Can't save log entry for statement: '%s'"
 msgstr "Não foi possível salvar entrada no log para declaração: '%s'"
