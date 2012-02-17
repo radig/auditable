@@ -57,10 +57,10 @@ class AuditableBehavior extends ModelBehavior
 	);
 	
 	/**
-	 * Dados do usuário ativo, formatado
-	 * como um resultado de um find('first')
+	 * ID do usuário ativo
 	 * 
-	 * @var array
+	 * @var mixed Pode ser um int, string (uuid) ou qualquer outro campo tipo de campo
+	 * primário.
 	 */
 	protected $activeUserId = null;
 	
@@ -129,20 +129,21 @@ class AuditableBehavior extends ModelBehavior
 	/**
 	 * Permite a definição do usuário ativo.
 	 * 
-	 * @param array $userData
+	 * @param int $userId
 	 */
-	public function setActiveUser(&$Model, $userData = array())
+	public function setActiveUser(&$Model, $userId)
 	{
-		if(empty($userData) || !is_array($userData))
+		if(empty($userId))
 			return false;
 		
-		$this->activeUserId = $userData;
+		$this->activeUserId = $userId;
 		
 		return true;
 	}
 	
 	/**
-	 *
+	 * 
+	 * 
 	 * @param Model $Model
 	 * @return bool 
 	 */
@@ -150,17 +151,18 @@ class AuditableBehavior extends ModelBehavior
 	{
 		parent::beforeSave($Model);
 		
-		$create = empty($Model->data[$Model->alias]['id']);
+		$action = ((isset($Model->data[$Model->alias]['id']) && !empty($Model->data[$Model->alias]['id'])) || !empty($Model->id)) ? 'modify' : 'create';
 		
-		$this->logResponsible($Model, $create);
+		$this->logResponsible($Model, $action);
 		
-		$this->takeSnapshot($Model, $create);
+		$this->takeSnapshot($Model, $action);
 		
 		return true;
 	}
 	
 	/**
-	 *
+	 * 
+	 * 
 	 * @param Model $Model
 	 * @param bool $created
 	 * @return bool 
@@ -169,11 +171,39 @@ class AuditableBehavior extends ModelBehavior
 	{
 		parent::afterSave($Model, $created);
 		
-		$this->logQuery($Model, $created);
+		$action = $created ? 'create' : 'modify';
+		
+		$this->logQuery($Model, $action);
 		
 		return true;
 	}
-
+	
+	/**
+	 * 
+	 * 
+	 * @param Model $Model
+	 * @param bool $cascade 
+	 */
+	public function beforeDelete($Model, $cascade = true)
+	{
+		parent::beforeDelete($Model, $cascade);
+		
+		$this->takeSnapshot($Model);
+		
+		return true;
+	}
+	
+	/**
+	 * 
+	 * 
+	 * @param Model $Model 
+	 */
+	public function afterDelete($Model)
+	{
+		parent::afterDelete($Model);
+		
+		$this->logQuery($Model, 'delete');
+	}
 
 	/**
 	 * Recupera as definições para o modelo corrente
@@ -194,6 +224,11 @@ class AuditableBehavior extends ModelBehavior
 	 */
 	protected function logResponsible(&$Model, $create = true)
 	{
+		if(empty($this->activeUserId))
+		{
+			return;
+		}
+		
 		$createdByField = $this->settings[$Model->alias]['fields']['created'];
 		$modifiedByField = $this->settings[$Model->alias]['fields']['modified'];
 		
@@ -212,22 +247,27 @@ class AuditableBehavior extends ModelBehavior
 	 * Guarda um instântaneo do registro que está sendo alterado
 	 * 
 	 * @param Model $Model
-	 * @param bool $create
 	 * 
 	 * @return void 
 	 */
-	protected function takeSnapshot(&$Model, $create = true)
+	protected function takeSnapshot(&$Model)
 	{
-		if(!$create)
+		if(isset($Model->data[$Model->alias]['id']) && !empty($Model->data[$Model->alias]['id']))
 		{
-			$aux = $Model->find('first', array(
-				'conditions' => array("{$Model->alias}.id" => $Model->data[$Model->alias]['id']),
-				'recursive' => -1
-				)
-			);
-				
-			$this->snapshots[$Model->alias] = $aux[$Model->alias];
+			$id = $Model->data[$Model->alias]['id'];
 		}
+		else
+		{
+			$id = $Model->id;
+		}
+		
+		$aux = $Model->find('first', array(
+			'conditions' => array("{$Model->alias}.id" => $id),
+			'recursive' => -1
+			)
+		);
+				
+		$this->snapshots[$Model->alias] = $aux[$Model->alias];
 	}
 	
 	/**
@@ -235,18 +275,41 @@ class AuditableBehavior extends ModelBehavior
 	 * do Modelo Logger
 	 * 
 	 * @param Model $Model
-	 * @param bool $create 
+	 * @param string $action
 	 */
-	protected function logQuery(&$Model, $create = true)
+	protected function logQuery(&$Model, $action = 'create')
 	{
-		$diff = $Model->data[$Model->alias];
-		
-		if(!$create)
+		switch($action)
 		{
-			$diff = $this->diffRecords($this->snapshots[$Model->alias], $Model->data[$Model->alias]);
+			case 'create':
+				$diff = array();
+				
+				if(isset($Model->data[$Model->alias]))
+					$diff = $Model->data[$Model->alias];
+				
+				break;
+			
+			case 'modify':
+				$diff = $this->diffRecords($this->snapshots[$Model->alias], $Model->data[$Model->alias]);
+				break;
+			
+			case 'delete':
+				$diff = $this->snapshots[$Model->alias];
+				break;
+		
+			// Casos genéricos, como login onde não há alteração nos dados
+			default:
+				$diff = array();
 		}
 		
-		$msg = $this->buildHumanMessage($this->settings[$Model->alias]['format'], $create, $diff);
+		// Remoção dos campos ignorados
+		foreach($this->settings[$Model->alias]['skip'] as $field)
+		{
+			if(isset($diff[$field]))
+				unset($diff[$field]);
+		}
+		
+		$msg = $this->buildHumanMessage($this->settings[$Model->alias]['format'], $action, $diff);
 		
 		$ds = $Model->getDataSource();
 		$statement = '';
@@ -259,7 +322,7 @@ class AuditableBehavior extends ModelBehavior
 		}
 		
 		$toSave = array(
-			'user_id' => $this->activeUserId,
+			'user_id' => $this->activeUserId ?: 0,
 			'model_alias' => $Model->alias,
 			'model_id' => $Model->id,
 			'description' => $msg,
@@ -277,34 +340,44 @@ class AuditableBehavior extends ModelBehavior
 	 * Cria uma mensagem facilmente entendida por humanos
 	 * 
 	 * @param string $tmpl 
-	 * @param bool $create 
+	 * @param string $action
 	 * @param array $diff caso seja criação de registro ou um array, caso
 	 * seja alteração
 	 * 
 	 * @return string Mensagem legível para humanos
 	 */
-	private function buildHumanMessage($tmpl, $create, $diff = array())
+	private function buildHumanMessage($tmpl, $action, $diff = array())
 	{
-		$placeHolders = array(
-			'action' => $create ? __d('auditable', 'created') : __d('auditable', 'modified')
-		);
-		
+		$placeHolders = array();
 		$humanDiff = '';
 		$fieldLiteral = __d('auditable', 'field');
 		
-		if(!$create)
+		switch($action)
 		{
-			foreach($diff as $field => $changes)
-			{
-				$humanDiff .= $fieldLiteral . " $field ({$changes['old']} -> {$changes['new']})\n";
-			}
-		}
-		else
-		{
-			foreach($diff as $field => $value)
-			{
-				$humanDiff .= $fieldLiteral . " $field ($value)\n";
-			}
+			case 'modify':
+				$placeHolders['action'] = __d('auditable', 'modified');
+				
+				foreach($diff as $field => $changes)
+					$humanDiff .= $fieldLiteral . " $field ({$changes['old']} -> {$changes['new']})\n";
+				
+				break;
+				
+			case 'create':
+				$placeHolders['action'] = __d('auditable', 'created');
+				
+			case 'delete':
+				if(!isset($placeHolders['action']))
+					$placeHolders['action'] = __d('auditable', 'deleted');
+				
+				foreach($diff as $field => $value)
+					$humanDiff .= $fieldLiteral . " $field ($value)\n";
+				
+				break;
+				
+			default:
+				$placeHolders['action'] = __d('auditable', $action);
+				$humanDiff .= __d('auditable', 'nothing changed');
+				break;
 		}
 		
 		$placeHolders['data'] = $humanDiff;
@@ -332,6 +405,9 @@ class AuditableBehavior extends ModelBehavior
 		
 		foreach($diff as $key => $value)
 		{
+			if(!isset($old[$key]) || !isset($new[$key]))
+				continue;
+			
 			$formatted[$key] = array('old' => $old[$key], 'new' => $new[$key]);
 		}
 		
