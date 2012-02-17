@@ -3,16 +3,44 @@ h1. CakePHP Auditable
 Este plugin inclui funções para tornar a auditoria de sistemas em CakePHP mais simples.
 A ideia central é manter a informação de qual usuário fez o quê, e quando isso foi feito.
 
+h2. Como usar
+
+Existem duas configurações, a primeira é definir, logo que esteja disponível, a informação
+sobre o usuário logado e o modelo que salvará a mensagem de log no BD. Para isso, uma sugestão
+é usar o callback do AppController, deixando-o mais ou menos assim:
+
+<pre>
+public function beforeFilter() {
+	parent::beforeFilter();
+	
+	AuditableConfig::$userId = $this->Auth->user('id');
+	
+	// Caso deseje usar o modelo padrão, utilize como abaixo, caso contrário você pode usar qualquer modelo
+	AuditableConfig::$Logger =& ClassRegistry::init('Auditable.Logger');
+}
+</pre>
+
+Em seguida você deve configurar em cada um dos modelos auditáveis o behavior Auditable, incluindo
+ele em seu $actsAs da seguinte maneira
+
+bc. public $actsAs = array('Auditable.Auditable');
+
+É possível configurar alguns items do behavior, são eles:
+
+* *format* : Uma string que será usada como descrição do log. Aceita dois placeholders: ':action' e ':data' que representam respectivamente a ação (criação ou modificação) e o que foi efetivamente alterado.
+* *skip* : Lista com nome das ações que devem ser ignoradas pelo log. @TODO
+* *fields* : Aceita os dois índices abaixo
+** *created* : Nome do campo presente em cada modelo para armazenar quem criou o registro
+** *modified* : Nome do campo presente em cada modelo para armazenar quem alterou o registro
+
 h2. Autor e Copyright
 
-* *Copyright 2011,* "*Radig - Soluções em TI*":http://www.radig.com.br
+* *Copyright 2011-2012,* "*Radig - Soluções em TI*":http://www.radig.com.br
 * Licença MIT - Isto quer dizer que o código está disponível sem nenhuma garantia, ao mesmo tempo que
 você pode usa-lo de forma isolada ou em conjunto com seu próprio código.
 
 h2. Observações
 
-* Este behavior requer PHP versão >= 5.3.1
-
-h2. Como usar
-
-* *Encontra-se em desenvolvimento, em breve disponibilizaremos mais detalhes*
+* Este behavior requer PHP versão >= 5.3
+* Compatível com CakePHP 2.0 e 2.1
+* Consulte os testes incluído no plugin para ver melhor seu funcionamento

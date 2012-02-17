@@ -1,0 +1,26 @@
+<?php
+class auditableSchema extends CakeSchema
+{
+	public $name = 'auditable';
+	
+	public function before($event = array())
+	{
+		return true;
+	}
+
+	public function after($event = array())
+	{
+	}
+
+	public $logs = array(
+		'id' => array('type' => 'integer', 'null' => false, 'default' => null, 'length' => 11, 'key' => 'primary'),
+		'user_id' => array('type' => 'integer', 'null' => false, 'default' => null),
+		'model_alias' => array('type' => 'string', 'null' => false, 'default' => null, 'length' => 50),
+		'model_id' => array('type' => 'integer', 'null' => false, 'default' => null),
+		'description' => array('type' => 'text', 'null' => false, 'default' => null),
+		'statement' => array('type' => 'text', 'null' => false, 'default' => null),
+		'created' => array('type' => 'datetime', 'null' => true, 'default' => null),
+		'modified' => array('type' => 'datetime', 'null' => true, 'default' => null),
+		'indexes' => array('PRIMARY' => array('column' => 'id', 'unique' => 1))
+	);
+}
