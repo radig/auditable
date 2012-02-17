@@ -27,8 +27,14 @@ bc. public $actsAs = array('Auditable.Auditable');
 
 É possível configurar alguns items do behavior, são eles:
 
-* *format* : Uma string que será usada como descrição do log. Aceita dois placeholders: ':action' e ':data' que representam respectivamente a ação (criação ou modificação) e o que foi efetivamente alterado.
-* *skip* : Lista com nome das ações que devem ser ignoradas pelo log. @TODO
+* *formats* : Um array com os diferentes formatos utilizados nos logs, conforme abaixo
+** *general* : Uma string que será usada como descrição do log. Aceita dois placeholders: ':action' e ':data' que representam respectivamente a ação (criação ou modificação) e o que foi efetivamente alterado.
+** *prepend* : Uma string que será prefixada em cada campo do log. Não aceita placeholders.
+** *pospend* : Uma string que será pósfixada em cada campo do log. Não aceita placeholders.
+** *create* : Uma string que será usado para logs de criação. Aceita os placeholders ':field' e ':value'
+** *modify* : Um string que será usada para logs de modificação. Aceita os placeholders ':field', ':old' e ':new'
+** *delete* : Uma string que será usada para logs de remoção. Aceita os placeholders ':field' e ':value'
+* *skip* : Lista com nome dos campos que devem ser ignoradas no log.
 * *fields* : Aceita os dois índices abaixo
 ** *created* : Nome do campo presente em cada modelo para armazenar quem criou o registro
 ** *modified* : Nome do campo presente em cada modelo para armazenar quem alterou o registro
