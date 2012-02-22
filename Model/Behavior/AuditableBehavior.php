@@ -30,8 +30,7 @@
  * @package radig
  * @subpackage Auditable.Model.Behavior
  */
-
-App::uses('Lib', 'Auditable/AuditableConfig');
+App::uses('AuditableConfig', 'Auditable.Lib');
 
 class AuditableBehavior extends ModelBehavior
 {
@@ -48,19 +47,17 @@ class AuditableBehavior extends ModelBehavior
 	 * @var array
 	 */
 	protected $defaults = array(
-		'formats' => array(
-			'general' => 'record :action :data',
-			'prepend' => 'field',
-			'pospend' => "\n",
-			'create' => ":field as ':value'",
-			'modify' => ":field from ':old' to ':new'",
-			'delete' => ":field as ':value'"
-		),
 		'skip' => array(),
 		'fields' => array(
 			'created' => 'created_by',
 			'modified' => 'modified_by'
 		)
+	);
+	
+	protected $typesEnum = array(
+		'create' => 1,
+		'modify' => 2,
+		'delete' => 3
 	);
 	
 	/**
@@ -162,7 +159,10 @@ class AuditableBehavior extends ModelBehavior
 		
 		$this->logResponsible($Model, $action);
 		
-		$this->takeSnapshot($Model, $action);
+		if($action == 'modify')
+		{
+			$this->takeSnapshot($Model);
+		}
 		
 		return true;
 	}
@@ -303,10 +303,6 @@ class AuditableBehavior extends ModelBehavior
 			case 'delete':
 				$diff = $this->snapshots[$Model->alias];
 				break;
-		
-			// Casos genéricos, como login onde não há alteração nos dados
-			default:
-				$diff = array();
 		}
 		
 		// Remoção dos campos ignorados
@@ -316,8 +312,79 @@ class AuditableBehavior extends ModelBehavior
 				unset($diff[$field]);
 		}
 		
-		$msg = $this->buildHumanMessage($this->settings[$Model->alias]['formats'], $action, $diff);
+		$encoded = $this->buildEncodedMessage($action, $diff);
 		
+		$statement = $this->getQuery($Model);
+		
+		$toSave = array(
+			'Logger' => array(
+				'user_id' => $this->activeUserId ?: 0,
+				'model_alias' => $Model->alias,
+				'model_id' => $Model->id,
+				'type' => $this->typesEnum[$action] ?: 0,
+			),
+			'LogDetail' => array(
+				'difference' => $encoded,
+				'statement' => $statement,
+			)
+		);
+		
+		// Salva a entrada nos logs. Caso haja falha, usa o Log default do Cake para registrar a falha
+		if($this->Logger->saveAssociated($toSave) === false)
+		{
+			CakeLog::write(LOG_WARNING, sprintf(__d('auditable', "Can't save log entry for statement: \"%s'\""), $statement));
+		}
+	}
+	
+	/**
+	 * Codifica as alterações no registro (ou dados de criação) em um formato
+	 * serializado, que é passado como primeiro parâmetro da função.
+	 * Caso não seja passado uma função válida, a serialize padrão é usada.
+	 * 
+	 * 
+	 * @param string $action create|modify|delete
+	 * @param array $data Dados do registro
+	 * 
+	 * @return string Dados $data serializados
+	 */
+	private function buildEncodedMessage($action, $data)
+	{
+		$encode = array();
+		
+		switch($action)
+		{
+			case 'modify':
+				foreach($data as $field => $changes)
+					$encode[$field] = $changes;
+				
+				break;
+				
+			case 'create':
+			case 'delete':
+				foreach($data as $field => $value)
+					$encode[$field] = $value;
+				break;
+		}
+		
+		$func = 'serialize';
+		
+		if(is_callable(AuditableConfig::$serialize))
+		{
+			$func = AuditableConfig::$serialize;
+		}
+		
+		return call_user_func($func, $encode);
+	}
+	
+	/**
+	 * Recupera a última query executada pelo Modelo->DataSource
+	 * e a retorna.
+	 * 
+	 * @param Model $Model
+	 * @return string $statement
+	 */
+	private function getQuery($Model)
+	{
 		$ds = $Model->getDataSource();
 		$statement = '';
 		
@@ -328,71 +395,7 @@ class AuditableBehavior extends ModelBehavior
 			$statement = $logs['query'];
 		}
 		
-		$toSave = array(
-			'user_id' => $this->activeUserId ?: 0,
-			'model_alias' => $Model->alias,
-			'model_id' => $Model->id,
-			'description' => $msg,
-			'statement' => $statement,
-		);
-		
-		// Salva a entrada nos logs. Caso haja falha, usa o Log default do Cake para registrar a falha
-		if($this->Logger->save($toSave) === false)
-		{
-			CakeLog::write(LOG_WARNING, sprintf(__d('auditable', "Can't save log entry for statement: '%s'"), $statement));
-		}
-	}
-	
-	/**
-	 * Cria uma mensagem facilmente entendida por humanos
-	 * 
-	 * @param string $tmpl 
-	 * @param string $action
-	 * @param array $diff caso seja criação de registro ou um array, caso
-	 * seja alteração
-	 * 
-	 * @return string Mensagem legível para humanos
-	 */
-	private function buildHumanMessage($tmpl, $action, $diff = array())
-	{
-		$placeHolders = array();
-		$humanDiff = '';
-		$prepend = __d('auditable', $tmpl['prepend']) . ' ';
-		$pospend = ' ' . __d('auditable', $tmpl['pospend']);
-		
-		switch($action)
-		{
-			case 'modify':
-				$placeHolders['action'] = __d('auditable', 'modified');
-				
-				foreach($diff as $field => $changes)
-					$humanDiff .= $prepend . String::insert($tmpl['modify'], array('field' => $field, 'old' => $changes['old'], 'new' => $changes['new'])) . $pospend;
-				
-				break;
-				
-			case 'create':
-				$placeHolders['action'] = __d('auditable', 'created');
-				
-			case 'delete':
-				if(!isset($placeHolders['action']))
-					$placeHolders['action'] = __d('auditable', 'deleted');
-				
-				foreach($diff as $field => $value)
-					$humanDiff .= $prepend . String::insert($tmpl[$action], compact('field', 'value')) . $pospend;
-				
-				break;
-				
-			default:
-				$placeHolders['action'] = __d('auditable', $action);
-				$humanDiff .= __d('auditable', 'nothing changed');
-				break;
-		}
-		
-		$placeHolders['data'] = $humanDiff;
-		
-		$msg = String::insert(__d('auditable', $tmpl['general']), $placeHolders);
-		
-		return $msg;
+		return $statement;
 	}
 	
 	/**

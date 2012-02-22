@@ -16,4 +16,20 @@ class AuditableConfig
 	 * @var Model
 	 */
 	static public $Logger = null;
+	
+	/**
+	 * Nome da função utilizada na serialização
+	 * dos dados antes de persistir o log.
+	 * 
+	 * @var string
+	 */
+	static public $serialize = 'serialize';
+	
+	/**
+	 * Nome da função utilizada na deserialização
+	 * dos dados ao recupera-los dos logs.
+	 * 
+	 * @var string
+	 */
+	static public $unserialize = 'unserialize';
 }

@@ -14,5 +14,5 @@ msgstr ":field com ':value'"
 msgid ":field from ':old' to ':new'"
 msgstr ":field de ':old' para ':new'"
 
-msgid "Can't save log entry for statement: '%s'"
-msgstr "Não foi possível salvar entrada no log para declaração: '%s'"
+msgid "Can't save log entry for statement: \"%s\""
+msgstr "Não foi possível salvar entrada no log para declaração: \"%s\""
