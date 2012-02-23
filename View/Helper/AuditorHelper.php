@@ -30,10 +30,10 @@ class AuditorHelper extends AppHelper
 		'formats' => array(
 			'general' => 'record :action :data',
 			'prepend' => 'field',
-			'pospend' => "\n",
-			'create' => ":field as ':value'",
-			'modify' => ":field from ':old' to ':new'",
-			'delete' => ":field as ':value'"
+			'pospend' => "<br  />\n",
+			'create' => "':field' as ':value'",
+			'modify' => "':field' from ':old' to ':new'",
+			'delete' => "':field' as ':value'"
 		)
 	);
 	
@@ -84,10 +84,12 @@ class AuditorHelper extends AppHelper
 		$placeHolders = array();
 		$prepend = __d('auditable', $this->settings['formats']['prepend']) . ' ';
 		$pospend = ' ' . __d('auditable', $this->settings['formats']['pospend']);
+		$humanDiff = '';
+		$action = $this->typesEnum[$type];
 		
 		switch($type)
 		{
-			case 1:
+			case 2:
 				$placeHolders['action'] = __d('auditable', 'modified');
 				
 				foreach($data as $field => $changes)
@@ -95,7 +97,7 @@ class AuditorHelper extends AppHelper
 				
 				break;
 				
-			case 2:
+			case 1:
 				$placeHolders['action'] = __d('auditable', 'created');
 				
 			case 3:
@@ -112,6 +114,8 @@ class AuditorHelper extends AppHelper
 				$humanDiff .= __d('auditable', 'nothing changed');
 				break;
 		}
+		
+		$placeHolders['data'] = $humanDiff;
 		
 		$msg = String::insert(__d('auditable', $this->settings['formats']['general']), $placeHolders);
 		
