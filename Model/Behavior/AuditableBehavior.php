@@ -103,7 +103,6 @@ class AuditableBehavior extends ModelBehavior
 	 * @param array $config
 	 * 
 	 * Opções de configurações:
-	 *   format			: ':action record with :data',
 	 *   skip           : array. Lista com nome das ações que devem ser ignoradas pelo log.
 	 *   fields			: array. Aceita os dois índices abaixo
 	 *     - created	: string. Nome do campo presente em cada modelo para armazenar quem criou o registro
