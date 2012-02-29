@@ -18,7 +18,7 @@
  * @subpackage Auditable.View.Helper
  */
 
-App::uses('AuditableConfig', 'Auditable.Lib');
+App::import('Vendor', 'Auditable.AuditableConfig');
 class AuditorHelper extends AppHelper
 {
 	/**
@@ -58,7 +58,7 @@ class AuditorHelper extends AppHelper
 	 */
 	public function type($t)
 	{
-		return ucfirst(__d('auditable', $this->typesEnum[$t]));
+		return ucfirst(__d('auditable', $this->typesEnum[$t], true));
 	}
 	
 	/**
@@ -82,15 +82,15 @@ class AuditorHelper extends AppHelper
 		$data = call_user_func($func, $data);
 		
 		$placeHolders = array();
-		$prepend = __d('auditable', $this->settings['formats']['prepend']) . ' ';
-		$pospend = ' ' . __d('auditable', $this->settings['formats']['pospend']);
+		$prepend = __d('auditable', $this->settings['formats']['prepend'], true) . ' ';
+		$pospend = ' ' . __d('auditable', $this->settings['formats']['pospend'], true);
 		$humanDiff = '';
 		$action = $this->typesEnum[$type];
 		
 		switch($type)
 		{
 			case 2:
-				$placeHolders['action'] = __d('auditable', 'modified');
+				$placeHolders['action'] = __d('auditable', 'modified', true);
 				
 				foreach($data as $field => $changes)
 					$humanDiff .= $prepend . String::insert($this->settings['formats']['modify'], array('field' => $field, 'old' => $changes['old'], 'new' => $changes['new'])) . $pospend;
@@ -98,11 +98,11 @@ class AuditorHelper extends AppHelper
 				break;
 				
 			case 1:
-				$placeHolders['action'] = __d('auditable', 'created');
+				$placeHolders['action'] = __d('auditable', 'created', true);
 				
 			case 3:
 				if(!isset($placeHolders['action']))
-					$placeHolders['action'] = __d('auditable', 'deleted');
+					$placeHolders['action'] = __d('auditable', 'deleted', true);
 				
 				foreach($data as $field => $value)
 					$humanDiff .= $prepend . String::insert($this->settings['formats'][$action], compact('field', 'value')) . $pospend;
@@ -110,14 +110,14 @@ class AuditorHelper extends AppHelper
 				break;
 				
 			default:
-				$placeHolders['action'] = __d('auditable', 'undefined');
-				$humanDiff .= __d('auditable', 'nothing changed');
+				$placeHolders['action'] = __d('auditable', 'undefined', true);
+				$humanDiff .= __d('auditable', 'nothing changed', true);
 				break;
 		}
 		
 		$placeHolders['data'] = $humanDiff;
 		
-		$msg = String::insert(__d('auditable', $this->settings['formats']['general']), $placeHolders);
+		$msg = String::insert(__d('auditable', $this->settings['formats']['general'], true), $placeHolders);
 		
 		return $msg;
 	}

@@ -19,7 +19,9 @@ class LoggersController extends AppController
 		
 		if(!$this->Logger->exists())
 		{
-			throw new NotFoundException(__d('auditable', 'Log entry could not be find.'));
+			$this->Session->setFlash(__d('auditable', 'Log entry could not be find.'));
+
+			return;
 		}
 		
 		$this->set('logger', $this->Logger->get($id));

@@ -30,7 +30,7 @@
  * @package radig
  * @subpackage Auditable.Model.Behavior
  */
-App::uses('AuditableConfig', 'Auditable.Lib');
+App::import('Vendor', 'Auditable.AuditableConfig');
 
 class AuditableBehavior extends ModelBehavior
 {
