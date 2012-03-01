@@ -298,7 +298,7 @@ class AuditableBehavior extends ModelBehavior
 		// Se não houver modelo configurado para salvar o log, aborta
 		if($this->checkLogModels() === false)
 		{
-			CakeLog::write(LOG_WARNING, __d('auditable', "You need to define AuditableConfig::$Logger"));
+			CakeLog::write(LOG_WARNING, __d('auditable', "You need to define AuditableConfig::$Logger", true));
 			return;
 		}
 
@@ -348,7 +348,7 @@ class AuditableBehavior extends ModelBehavior
 		// Salva a entrada nos logs. Caso haja falha, usa o Log default do Cake para registrar a falha
 		if($this->Logger->saveAll($toSave) === false)
 		{
-			CakeLog::write(LOG_WARNING, sprintf(__d('auditable', "Can't save log entry for statement: \"%s'\""), $statement));
+			CakeLog::write(LOG_WARNING, sprintf(__d('auditable', "Can't save log entry for statement: \"%s'\"", true), $statement));
 		}
 	}
 	

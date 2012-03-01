@@ -3,12 +3,12 @@
 
 	<p><?php echo $this->Paginator->counter(); ?></p>
 
-	<table cellpadding="0" cellspacing="0">
+	<table cellpadding="0" cellspacing="0" class="view-table">
 	<tr>
 		<th><?php echo $this->Paginator->sort('id'); ?></th>
 		<th><?php echo $this->Paginator->sort('type'); ?></th>
 		<th><?php echo $this->Paginator->sort('created'); ?></th>
-		<th class="actions"><?php echo __d('auditable', 'Actions'); ?></th>
+		<th class="actions"><?php echo __d('auditable', 'Actions', true); ?></th>
 	</tr>
 	<?php
 	$i = 0;
@@ -23,16 +23,16 @@
 			<td><?php echo $this->Auditor->type($logger['Logger']['type']); ?></td>
 			<td><?php echo $logger['Logger']['created']; ?></td>
 			<td class="actions">
-				<?php echo $this->Html->link(__d('auditable', 'View'), array('action' => 'view', $logger['Logger']['id'])); ?>
+				<?php echo $this->Html->link(__d('auditable', 'View', true), array('action' => 'view', $logger['Logger']['id'])); ?>
 			</td>
 		</tr>
 	<?php endforeach; ?>
 	</table>
 	<div class="paging">
 		<?php
-		echo $this->Paginator->prev('< ' . __('previous'), array(), null, array('class' => 'prev disabled'));
+		echo $this->Paginator->prev('< ' . __('previous',true), array(), null, array('class' => 'prev disabled'));
 		echo $this->Paginator->numbers(array('separator' => ''));
-		echo $this->Paginator->next(__('next') . ' >', array(), null, array('class' => 'next disabled'));
+		echo $this->Paginator->next(__('next', true) . ' >', array(), null, array('class' => 'next disabled'));
 		?>
 	</div>
 </div>

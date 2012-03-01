@@ -16,3 +16,6 @@ msgstr ":field de ':old' para ':new'"
 
 msgid "Can't save log entry for statement: \"%s\""
 msgstr "Não foi possível salvar entrada no log para declaração: \"%s\""
+
+msgid "You need to define AuditableConfig::$Logger"
+msgstr "Você precisa definir AuditableConfig::$Logger"
