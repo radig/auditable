@@ -167,8 +167,6 @@ class AuditableBehavior extends ModelBehavior
 		
 		$this->logResponsible($Model, $action);
 
-		$this->takeQuerySnapshot($Model);
-		
 		if($action == 'modify')
 		{
 			$this->takeSnapshot($Model);
@@ -189,8 +187,6 @@ class AuditableBehavior extends ModelBehavior
 		parent::afterSave($Model, $created);
 		
 		$action = $created ? 'create' : 'modify';
-		
-		$this->takeQuerySnapshot($Model, 'after');
 
 		$this->logQuery($Model, $action);
 		
@@ -207,8 +203,6 @@ class AuditableBehavior extends ModelBehavior
 	{
 		parent::beforeDelete($Model, $cascade);
 		$this->autoUpdateConfig();
-		
-		$this->takeQuerySnapshot($Model);
 
 		$this->takeSnapshot($Model);
 		
@@ -224,8 +218,6 @@ class AuditableBehavior extends ModelBehavior
 	{
 		parent::afterDelete($Model);
 
-		$this->takeQuerySnapshot($Model, 'after');
-		
 		$this->logQuery($Model, 'delete');
 	}
 
@@ -292,32 +284,6 @@ class AuditableBehavior extends ModelBehavior
 		);
 		
 		$this->snapshots[$Model->name] = $aux[$Model->name];
-	}
-
-	/**
-	 * Salva o instantaneo dos logs sql.
-	 * 
-	 * @param  Model $Model [description]
-	 * @param  string $when 'before' ou 'after'
-	 * 
-	 * @return void
-	 */
-	protected function takeQuerySnapshot($Model, $when = 'before')
-	{
-		$ds = $Model->getDataSource();
-		
-		if(method_exists($ds, 'getLog'))
-		{
-			$aux = $ds->getLog();
-			$logs = array();
-
-			foreach($aux['log'] as $l)
-			{
-				$logs[] = $l['query'];
-			}
-
-			$this->sqlSnapshots[$when] = $logs;
-		}
 	}
 	
 	/**
@@ -430,21 +396,27 @@ class AuditableBehavior extends ModelBehavior
 	 * Recupera a última query executada pelo Modelo->DataSource
 	 * e a retorna.
 	 * 
-	 * @return string statement
+	 * @param Model $Model
+	 * @return string statements
 	 */
-	private function getQuery()
+	private function getQuery($Model)
 	{
-		if(!isset($this->sqlSnapshots['before']) || !isset($this->sqlSnapshots['after']))
+		$ds = $Model->getDataSource();
+		$statement = '';
+
+		if(method_exists($ds, 'getLog'))
 		{
-			return '';
+			$logs = $ds->getLog();
+			/**
+			 * @todo Nem sempre a última entrada representa
+			 * o a query de interesse. Buscar outra maneira.
+			 * @since 2012-03-01
+			 */
+			$logs = array_pop($logs['log']);
+			$statement = $logs['query'];
 		}
 
-		pr($this->sqlSnapshots);
-		die('uaaaa');
-
-		$diff = Set::diff($this->sqlSnapshots['before'], $this->sqlSnapshots['after']);
-
-		return implode(";\n", $diff);
+		return $statement;
 	}
 	
 	/**
