@@ -9,7 +9,9 @@ class Logger extends AppModel
 	
 	public $actsAs = array('Containable');
 	
-	public $belongsTo = array('LogDetail');
+	public $belongsTo = array(
+		'LogDetail' => array('className' => 'Auditable.LogDetail')
+		);
 	
 	/**
 	 * 

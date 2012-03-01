@@ -145,10 +145,9 @@ class AuditableBehavior extends ModelBehavior
 	}
 	
 	/**
-	 * 
-	 * 
+	 *
 	 * @param Model $Model
-	 * @return bool 
+	 * @return bool
 	 */
 	public function beforeSave(&$Model)
 	{
@@ -171,7 +170,7 @@ class AuditableBehavior extends ModelBehavior
 	 * 
 	 * @param Model $Model
 	 * @param bool $created
-	 * @return bool 
+	 * @return bool
 	 */
 	public function afterSave(&$Model, $created)
 	{
@@ -188,7 +187,7 @@ class AuditableBehavior extends ModelBehavior
 	 * 
 	 * 
 	 * @param Model $Model
-	 * @param bool $cascade 
+	 * @param bool $cascade
 	 */
 	public function beforeDelete($Model, $cascade = true)
 	{
@@ -202,7 +201,7 @@ class AuditableBehavior extends ModelBehavior
 	/**
 	 * 
 	 * 
-	 * @param Model $Model 
+	 * @param Model $Model
 	 */
 	public function afterDelete($Model)
 	{
@@ -226,7 +225,7 @@ class AuditableBehavior extends ModelBehavior
 	 * ação.
 	 * 
 	 * @param Model $Model
-	 * @param bool $create 
+	 * @param bool $create
 	 */
 	protected function logResponsible(&$Model, $create = true)
 	{
@@ -254,7 +253,7 @@ class AuditableBehavior extends ModelBehavior
 	 * 
 	 * @param Model $Model
 	 * 
-	 * @return void 
+	 * @return void
 	 */
 	protected function takeSnapshot(&$Model)
 	{
@@ -272,7 +271,7 @@ class AuditableBehavior extends ModelBehavior
 			'recursive' => -1
 			)
 		);
-				
+		
 		$this->snapshots[$Model->alias] = $aux[$Model->alias];
 	}
 	
@@ -285,6 +284,13 @@ class AuditableBehavior extends ModelBehavior
 	 */
 	protected function logQuery(&$Model, $action = 'create')
 	{
+		// Se não houver modelo configurado para salvar o log, aborta
+		if($this->checkLogModels() === false)
+		{
+			CakeLog::write(LOG_WARNING, __d('auditable', "You need to define AuditableConfig::$Logger"));
+			return;
+		}
+
 		switch($action)
 		{
 			case 'create':
@@ -422,5 +428,36 @@ class AuditableBehavior extends ModelBehavior
 		}
 		
 		return $formatted;
+	}
+
+	/**
+	 * Verifica e prepara os modelos utilizados para salvar os logs
+	 * para que não haja recursão infinita.
+	 * 
+	 * @return bool
+	 */
+	private function checkLogModels()
+	{
+		if(!($this->Logger instanceof Model))
+		{
+			return false;
+		}
+
+		if($this->Logger->Behaviors->attached('Auditable'))
+		{
+			$this->Logger->Behaviors->unload('Auditable');
+		}
+
+		if(!isset($this->Logger->LogDetail))
+		{
+			return false;
+		}
+
+		if($this->Logger->LogDetail->Behaviors->attached('Auditable'))
+		{
+			$this->Logger->LogDetail->Behaviors->unload('Auditable');
+		}
+
+		return true;
 	}
 }
