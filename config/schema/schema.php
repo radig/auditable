@@ -1,5 +1,5 @@
 <?php
-class auditableSchema extends CakeSchema
+class AuditableSchema extends CakeSchema
 {
 	public $name = 'auditable';
 	

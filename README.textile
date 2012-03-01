@@ -5,9 +5,9 @@ A ideia central é manter a informação de qual usuário fez o quê, e quando i
 
 h2. Como usar
 
-O Plugin utiliza uma classe estática como "repositório" das configurações globais dele. Estas
-configurações ficam então acessíveis ao Behavior e Helper, garantindo funcionamento correto
-de ambos.
+O Plugin utiliza uma classe estática como "repositório" das configurações globais dele. Estas configurações ficam então acessíveis ao Behavior e Helper, garantindo funcionamento correto de ambos.
+
+*ATENÇÃO* Não inclua o Behavior no AppModel da aplicação, isso irá gerar muitas entradas no log deixando seu sistema mais lento. Se precisar, faça por conta e risco.
 
 h3. Classe AuditableConfig
 

@@ -85,6 +85,15 @@ class AuditableBehavior extends ModelBehavior
 	 * @var array
 	 */
 	protected $snapshots = array();
+
+	/**
+	 * Guarda o instântaneo da pilha de queries
+	 * executadas antes e depois da invocação do modelo.
+	 * A diferença é usada no log do sistema.
+	 * 
+	 * @var array
+	 */
+	protected $sqlSnapshots = array();
 	
 	/**
 	 *  
@@ -92,8 +101,7 @@ class AuditableBehavior extends ModelBehavior
 	public function __construct() {
 		parent::__construct();
 		
-		$this->activeUserId =& AuditableConfig::$userId;
-		$this->Logger =& AuditableConfig::$Logger;
+		$this->autoUpdateConfig();
 	}
 	
 	/**
@@ -115,7 +123,7 @@ class AuditableBehavior extends ModelBehavior
 			$config = array();
 		}
 		
-		$this->settings[$Model->alias] = array_merge($this->defaults, $config);
+		$this->settings[$Model->name] = array_merge($this->defaults, $config);
 	}
 	
 	/**
@@ -126,7 +134,7 @@ class AuditableBehavior extends ModelBehavior
 	 */
 	public function setLogger(&$Model, Logger &$L)
 	{
-		$this->Logger = $L;
+		$this->Logger =& $L;
 	}
 	
 	/**
@@ -153,10 +161,13 @@ class AuditableBehavior extends ModelBehavior
 	public function beforeSave(&$Model)
 	{
 		parent::beforeSave($Model);
+		$this->autoUpdateConfig();
 		
-		$action = ((isset($Model->data[$Model->alias]['id']) && !empty($Model->data[$Model->alias]['id'])) || !empty($Model->id)) ? 'modify' : 'create';
+		$action = ((isset($Model->data[$Model->name]['id']) && !empty($Model->data[$Model->name]['id'])) || !empty($Model->id)) ? 'modify' : 'create';
 		
 		$this->logResponsible($Model, $action);
+
+		$this->takeQuerySnapshot($Model);
 		
 		if($action == 'modify')
 		{
@@ -179,6 +190,8 @@ class AuditableBehavior extends ModelBehavior
 		
 		$action = $created ? 'create' : 'modify';
 		
+		$this->takeQuerySnapshot($Model, 'after');
+
 		$this->logQuery($Model, $action);
 		
 		return true;
@@ -193,7 +206,10 @@ class AuditableBehavior extends ModelBehavior
 	public function beforeDelete($Model, $cascade = true)
 	{
 		parent::beforeDelete($Model, $cascade);
+		$this->autoUpdateConfig();
 		
+		$this->takeQuerySnapshot($Model);
+
 		$this->takeSnapshot($Model);
 		
 		return true;
@@ -207,6 +223,8 @@ class AuditableBehavior extends ModelBehavior
 	public function afterDelete($Model)
 	{
 		parent::afterDelete($Model);
+
+		$this->takeQuerySnapshot($Model, 'after');
 		
 		$this->logQuery($Model, 'delete');
 	}
@@ -218,7 +236,7 @@ class AuditableBehavior extends ModelBehavior
 	 */
 	public function settings(&$Model)
 	{
-		return $this->settings[$Model->alias];
+		return $this->settings[$Model->name];
 	}
 	
 	/**
@@ -235,17 +253,17 @@ class AuditableBehavior extends ModelBehavior
 			return;
 		}
 		
-		$createdByField = $this->settings[$Model->alias]['fields']['created'];
-		$modifiedByField = $this->settings[$Model->alias]['fields']['modified'];
+		$createdByField = $this->settings[$Model->name]['fields']['created'];
+		$modifiedByField = $this->settings[$Model->name]['fields']['modified'];
 		
 		if($create && $Model->schema($createdByField) !== null)
 		{
-			$Model->data[$Model->alias][$createdByField] = $this->activeUserId;
+			$Model->data[$Model->name][$createdByField] = $this->activeUserId;
 		}
 		
 		if(!$create && $Model->schema($modifiedByField) !== null)
 		{
-			$Model->data[$Model->alias][$modifiedByField] = $this->activeUserId;
+			$Model->data[$Model->name][$modifiedByField] = $this->activeUserId;
 		}
 	}
 	
@@ -258,9 +276,9 @@ class AuditableBehavior extends ModelBehavior
 	 */
 	protected function takeSnapshot(&$Model)
 	{
-		if(isset($Model->data[$Model->alias]['id']) && !empty($Model->data[$Model->alias]['id']))
+		if(isset($Model->data[$Model->name]['id']) && !empty($Model->data[$Model->name]['id']))
 		{
-			$id = $Model->data[$Model->alias]['id'];
+			$id = $Model->data[$Model->name]['id'];
 		}
 		else
 		{
@@ -268,12 +286,38 @@ class AuditableBehavior extends ModelBehavior
 		}
 		
 		$aux = $Model->find('first', array(
-			'conditions' => array("{$Model->alias}.id" => $id),
+			'conditions' => array("{$Model->name}.id" => $id),
 			'recursive' => -1
 			)
 		);
-				
-		$this->snapshots[$Model->alias] = $aux[$Model->alias];
+		
+		$this->snapshots[$Model->name] = $aux[$Model->name];
+	}
+
+	/**
+	 * Salva o instantaneo dos logs sql.
+	 * 
+	 * @param  Model $Model [description]
+	 * @param  string $when 'before' ou 'after'
+	 * 
+	 * @return void
+	 */
+	protected function takeQuerySnapshot($Model, $when = 'before')
+	{
+		$ds = $Model->getDataSource();
+		
+		if(method_exists($ds, 'getLog'))
+		{
+			$aux = $ds->getLog();
+			$logs = array();
+
+			foreach($aux['log'] as $l)
+			{
+				$logs[] = $l['query'];
+			}
+
+			$this->sqlSnapshots[$when] = $logs;
+		}
 	}
 	
 	/**
@@ -285,27 +329,34 @@ class AuditableBehavior extends ModelBehavior
 	 */
 	protected function logQuery(&$Model, $action = 'create')
 	{
+		// Se não houver modelo configurado para salvar o log, aborta
+		if($this->checkLogModels() === false)
+		{
+			CakeLog::write(LOG_WARNING, __d('auditable', "You need to define AuditableConfig::$Logger"));
+			return;
+		}
+
 		switch($action)
 		{
 			case 'create':
 				$diff = array();
 				
-				if(isset($Model->data[$Model->alias]))
-					$diff = $Model->data[$Model->alias];
+				if(isset($Model->data[$Model->name]))
+					$diff = $Model->data[$Model->name];
 				
 				break;
 			
 			case 'modify':
-				$diff = $this->diffRecords($this->snapshots[$Model->alias], $Model->data[$Model->alias]);
+				$diff = $this->diffRecords($this->snapshots[$Model->name], $Model->data[$Model->name]);
 				break;
 			
 			case 'delete':
-				$diff = $this->snapshots[$Model->alias];
+				$diff = $this->snapshots[$Model->name];
 				break;
 		}
 		
 		// Remoção dos campos ignorados
-		foreach($this->settings[$Model->alias]['skip'] as $field)
+		foreach($this->settings[$Model->name]['skip'] as $field)
 		{
 			if(isset($diff[$field]))
 				unset($diff[$field]);
@@ -317,10 +368,10 @@ class AuditableBehavior extends ModelBehavior
 		
 		$toSave = array(
 			'Logger' => array(
-				'user_id' => $this->activeUserId ?: 0,
-				'model_alias' => $Model->alias,
+				'user_id' => $this->activeUserId ? $this->activeUserId : 0,
+				'model_alias' => $Model->name,
 				'model_id' => $Model->id,
-				'type' => $this->typesEnum[$action] ?: 0,
+				'type' => $this->typesEnum[$action] ? $this->typesEnum[$action] : 0,
 			),
 			'LogDetail' => array(
 				'difference' => $encoded,
@@ -329,7 +380,7 @@ class AuditableBehavior extends ModelBehavior
 		);
 		
 		// Salva a entrada nos logs. Caso haja falha, usa o Log default do Cake para registrar a falha
-		if($this->Logger->saveAssociated($toSave) === false)
+		if($this->Logger->saveAll($toSave) === false)
 		{
 			CakeLog::write(LOG_WARNING, sprintf(__d('auditable', "Can't save log entry for statement: \"%s'\""), $statement));
 		}
@@ -379,22 +430,21 @@ class AuditableBehavior extends ModelBehavior
 	 * Recupera a última query executada pelo Modelo->DataSource
 	 * e a retorna.
 	 * 
-	 * @param Model $Model
-	 * @return string $statement
+	 * @return string statement
 	 */
-	private function getQuery($Model)
+	private function getQuery()
 	{
-		$ds = $Model->getDataSource();
-		$statement = '';
-		
-		if(method_exists($ds, 'getLog'))
+		if(!isset($this->sqlSnapshots['before']) || !isset($this->sqlSnapshots['after']))
 		{
-			$logs = $ds->getLog();
-			$logs = array_pop($logs['log']);
-			$statement = $logs['query'];
+			return '';
 		}
-		
-		return $statement;
+
+		pr($this->sqlSnapshots);
+		die('uaaaa');
+
+		$diff = Set::diff($this->sqlSnapshots['before'], $this->sqlSnapshots['after']);
+
+		return implode(";\n", $diff);
 	}
 	
 	/**
@@ -422,5 +472,58 @@ class AuditableBehavior extends ModelBehavior
 		}
 		
 		return $formatted;
+	}
+
+	/**
+	 * Seta dados do usuário ativo e modelo Logger
+	 * se já não tiverem sido setados.
+	 * Necessário apenas no Cake 1.3
+	 * 
+	 * @return void
+	 */
+	private function autoUpdateConfig()
+	{
+		if(empty($this->activeUserId))
+		{
+			$this->activeUserId = AuditableConfig::$userId;
+		}
+
+		if(empty($this->Logger))
+		{
+			$this->Logger =& AuditableConfig::$Logger;
+		}
+	}
+
+	/**
+	 * Verifica e prepara os modelos utilizados para salvar os logs
+	 * para que não haja recursão infinita.
+	 * 
+	 * @return bool
+	 */
+	private function checkLogModels()
+	{
+		if(!($this->Logger instanceof Model))
+		{
+			return false;
+		}
+
+		if($this->Logger->Behaviors->attached('Auditable'))
+		{
+			$this->Logger->Behaviors->detach('Auditable');
+			$this->Logger->Behaviors->disable('Auditable');
+		}
+
+		if(!isset($this->Logger->LogDetail))
+		{
+			return false;
+		}
+
+		if($this->Logger->LogDetail->Behaviors->attached('Auditable'))
+		{
+			$this->Logger->LogDetail->Behaviors->detach('Auditable');
+			$this->Logger->LogDetail->Behaviors->disable('Auditable');
+		}
+
+		return true;
 	}
 }
