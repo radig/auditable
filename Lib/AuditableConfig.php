@@ -2,12 +2,22 @@
 class AuditableConfig
 {
 	/**
-	 * Referência estática para os
-	 * dados do usuário ativo
+	 * ID do usuário ativo
 	 * 
 	 * @var array
 	 */
 	static public $userId = null;
+
+	/**
+	 * Nome do modelo que armazena os dados
+	 * do usuário.
+	 * 
+	 * Caso o modelo faça parte de um plugin
+	 * utilize a notação Plugin.Modelo
+	 * 
+	 * @var string
+	 */
+	static public $userModel = 'User';
 	
 	/**
 	 * Referência estática para os dados
