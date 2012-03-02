@@ -48,7 +48,8 @@ h3. Behavior Auditable
 
 É possível configurar alguns items do behavior, são eles:
 
-* *skip* : Lista com nome dos campos que devem ser ignoradas no log.
+* *auditSql* : Opção para habilitar o log das queries geradas pelo CakePHP. O padrão é true.
+* *skip* : Lista (array) com nome dos campos que devem ser ignoradas no log.
 * *fields* : Aceita os dois índices abaixo
 ** *created* : Nome do campo presente em cada modelo para armazenar quem criou o registro
 ** *modified* : Nome do campo presente em cada modelo para armazenar quem alterou o registro
