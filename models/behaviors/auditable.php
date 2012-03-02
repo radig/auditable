@@ -47,6 +47,7 @@ class AuditableBehavior extends ModelBehavior
 	 * @var array
 	 */
 	protected $defaults = array(
+		'auditSql' => true,
 		'skip' => array(),
 		'fields' => array(
 			'created' => 'created_by',
@@ -111,6 +112,7 @@ class AuditableBehavior extends ModelBehavior
 	 * @param array $config
 	 * 
 	 * Opções de configurações:
+	 *   auditSql       : bool. Habilita ou não o log das queries
 	 *   skip           : array. Lista com nome das ações que devem ser ignoradas pelo log.
 	 *   fields			: array. Aceita os dois índices abaixo
 	 *     - created	: string. Nome do campo presente em cada modelo para armazenar quem criou o registro
@@ -124,6 +126,13 @@ class AuditableBehavior extends ModelBehavior
 		}
 		
 		$this->settings[$Model->name] = array_merge($this->defaults, $config);
+
+		if($this->settings[$Model->name]['auditSql'])
+		{
+			// Força o recurso de salvar query, idependente do modo da aplicação
+			$ds = $Model->getDataSource();
+			$ds->fullDebug = true;
+		}
 	}
 	
 	/**
@@ -188,7 +197,10 @@ class AuditableBehavior extends ModelBehavior
 		
 		$action = $created ? 'create' : 'modify';
 
-		$this->logQuery($Model, $action);
+		if($this->settings[$Model->name]['auditSql'])
+		{
+			$this->logQuery($Model, $action);
+		}
 		
 		return true;
 	}
@@ -218,7 +230,10 @@ class AuditableBehavior extends ModelBehavior
 	{
 		parent::afterDelete($Model);
 
-		$this->logQuery($Model, 'delete');
+		if($this->settings[$Model->name]['auditSql'])
+		{
+			$this->logQuery($Model, 'delete');
+		}
 	}
 
 	/**
