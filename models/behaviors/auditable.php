@@ -18,7 +18,7 @@
  * Ainda utiliza um modelo auxiliar Logger (ou outro configurado para isso) para registrar
  * ações de inserção/edição e manter um histórico contínuo de alterações.
  * 
- * PHP version > 5.3.1
+ * PHP version > 5.2
  * 
  * Licensed under The MIT License
  * Redistributions of files must retain the above copyright notice.
