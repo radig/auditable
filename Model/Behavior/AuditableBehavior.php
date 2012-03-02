@@ -103,6 +103,7 @@ class AuditableBehavior extends ModelBehavior
 	 * @param array $config
 	 * 
 	 * Opções de configurações:
+	 *   auditSql       : bool. Habilita ou não o log das queries
 	 *   skip           : array. Lista com nome das ações que devem ser ignoradas pelo log.
 	 *   fields			: array. Aceita os dois índices abaixo
 	 *     - created	: string. Nome do campo presente em cada modelo para armazenar quem criou o registro
@@ -116,6 +117,13 @@ class AuditableBehavior extends ModelBehavior
 		}
 		
 		$this->settings[$Model->alias] = array_merge($this->defaults, $config);
+
+		if($this->settings[$Model->name]['auditSql'])
+		{
+			// Força o recurso de salvar query, idependente do modo da aplicação
+			$ds = $Model->getDataSource();
+			$ds->fullDebug = true;
+		}
 	}
 	
 	/**
