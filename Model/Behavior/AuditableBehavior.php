@@ -47,6 +47,7 @@ class AuditableBehavior extends ModelBehavior
 	 * @var array
 	 */
 	protected $defaults = array(
+		'auditSql' => true,
 		'skip' => array(),
 		'fields' => array(
 			'created' => 'created_by',
