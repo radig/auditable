@@ -1,4 +1,5 @@
 <?php
+App::import('Vendor', 'Auditable.AuditableConfig');
 class Logger extends AppModel
 {
 	public $name = 'Logger';
@@ -11,23 +12,36 @@ class Logger extends AppModel
 	
 	public $belongsTo = array(
 		'LogDetail' => array('className' => 'Auditable.LogDetail'),
-		'Responsible' => array(
-			'className' => 'User',
-			'foreignKey' => 'user_id'
-			)
-		);
+	);
 	
 	/**
 	 * 
-	 * 
 	 * @param int $id
+	 * @param  bool $loadResource
 	 * @return array
 	 */
 	public function get($id, $loadResource = true)
 	{
+		$contain = array('LogDetail');
+
+		if(!empty(AuditableConfig::$userModel))
+		{
+			$this->bindModel(array(
+				'belongsTo' => array(
+					'Responsible' => array(
+						'className' => AuditableConfig::$userModel,
+						'foreignKey' => 'user_id'
+						)
+					)
+				)
+			);
+
+			$contain[] = 'Responsible';
+		}
+
 		$data = $this->find('first', array(
 			'conditions' => array('Logger.id' => $id),
-			'contain' => array('LogDetail', 'Responsible')
+			'contain' => $contain
 			)
 		);
 		
@@ -47,6 +61,11 @@ class Logger extends AppModel
 		if(!empty($linked))
 		{
 			$data[$Resource->name] = $linked[$Resource->name];
+		}
+
+		if(array_search('Responsible', $contain) === false)
+		{
+			$data['Responsible']['name'] = '';
 		}
 		
 		return $data;

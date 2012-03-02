@@ -13,12 +13,17 @@ h3. Classe AuditableConfig
 
 É a classe que armazena as configurações do Plugin. Tem acesso estático aos seus quatro atributos, que são:
 
+* *userModel* Uma string com o nome do Modelo que armazena os usuários do sistema;
 * *userId* Um inteiro que representa o ID do usuário logado no sistema;
 * *Logger* A instância de um Modelo válido para salvar os logs;
 * *serialize* Uma string contendo o nome de uma função válida para serializar arrays;
 * *unserialize* Uma string contendo o nome de uma função válida para deserializar strings geradas pela função definida no atributo anterior.
 
 No próximo item é sugerido uma forma de definir esses atributos para toda a aplicação.
+
+Em todo lugar que precisar acessar esta classe (inclusive na hora de definir suas propriedades), faça a sua inclusão para garantir que esteja definida naquele escopo:
+
+bc. App::import('Vendor', 'Auditable.AuditableConfig');
 
 h3. Configuração mínima do Plugin
 
@@ -30,7 +35,7 @@ sobre o usuário logado e o modelo que salvará a mensagem de log no BD. Para is
 public function beforeFilter() {
 	parent::beforeFilter();
 	
-	if(!empty($this->Auth->user())) {
+	if($this->Auth->user('id')) {
 		AuditableConfig::$userId = $this->Auth->user('id');
 	}
 	
@@ -81,5 +86,5 @@ você pode usa-lo de forma isolada ou em conjunto com seu próprio código.
 h2. Observações
 
 * Este behavior requer PHP versão >= 5.2
-* Compatível com CakePHP 1.3 (há branche para versão 2.x)
+* Compatível com CakePHP 1.3 (há branch para versão 2.x)
 * Consulte os testes incluído no plugin para ver melhor seu funcionamento
