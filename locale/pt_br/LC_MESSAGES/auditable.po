@@ -4,15 +4,19 @@ msgid "modified"
 msgstr "alterado"
 msgid "deleted"
 msgstr "excluído"
-msgid "field"
-msgstr "campo"
+msgid "Field"
+msgstr "Campo"
 
-msgid 'record :action :data'
-msgstr 'registro :action :data'
-msgid ":field as ':value'",
-msgstr ":field com ':value'"
-msgid ":field from ':old' to ':new'"
-msgstr ":field de ':old' para ':new'"
+# Mensagens com placeholders
+
+msgid "Record \:action\:<br />\n \:data"
+msgstr "Registro \:action\:<br />\n \:data"
+msgid "\"\:field\" as \"\:value\""
+msgstr "\"\:field\" com \"\:value\""
+msgid "\"\:field\" from \"\:old\" to \"\:new\""
+msgstr "\"\:field\" de \"\:old\" para \"\:new\""
+
+# Mensagens de erro
 
 msgid "Can't save log entry for statement: \"%s\""
 msgstr "Não foi possível salvar entrada no log para declaração: \"%s\""

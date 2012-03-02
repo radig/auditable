@@ -10,7 +10,11 @@ class Logger extends AppModel
 	public $actsAs = array('Containable');
 	
 	public $belongsTo = array(
-		'LogDetail' => array('className' => 'Auditable.LogDetail')
+		'LogDetail' => array('className' => 'Auditable.LogDetail'),
+		'Responsible' => array(
+			'className' => 'User',
+			'foreignKey' => 'user_id'
+			)
 		);
 	
 	/**
@@ -19,21 +23,26 @@ class Logger extends AppModel
 	 * @param int $id
 	 * @return array
 	 */
-	public function get($id)
+	public function get($id, $loadResource = true)
 	{
 		$data = $this->find('first', array(
 			'conditions' => array('Logger.id' => $id),
-			'contain' => array('LogDetail')
+			'contain' => array('LogDetail', 'Responsible')
 			)
 		);
 		
-		$Resource = ClassRegistry::init($data[$this->name]['model_alias']);
+		$linked = null;
 		
-		$linked = $Resource->find('first', array(
-			'conditions' => array('id' => $data[$this->name]['model_id']),
-			'recursive' => -1
-			)
-		);
+		if($loadResource)
+		{
+			$Resource = ClassRegistry::init($data[$this->name]['model_alias']);
+			
+			$linked = $Resource->find('first', array(
+				'conditions' => array('id' => $data[$this->name]['model_id']),
+				'recursive' => -1
+				)
+			);
+		}
 		
 		if(!empty($linked))
 		{
