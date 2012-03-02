@@ -28,12 +28,12 @@ class AuditorHelper extends AppHelper
 	 */
 	public $settings = array(
 		'formats' => array(
-			'general' => 'record :action :data',
-			'prepend' => 'field',
-			'pospend' => "<br  />\n",
-			'create' => "':field' as ':value'",
-			'modify' => "':field' from ':old' to ':new'",
-			'delete' => "':field' as ':value'"
+			'general' => "Record :action:<br />\n :data",
+			'prepend' => "Field",
+			'pospend' => "<br />\n",
+			'create' => "\":field\" as \":value\"",
+			'modify' => "\":field\" from \":old\" to \":new\"",
+			'delete' => "\":field\" as \":value\""
 		)
 	);
 	
@@ -86,6 +86,7 @@ class AuditorHelper extends AppHelper
 		$pospend = ' ' . __d('auditable', $this->settings['formats']['pospend']);
 		$humanDiff = '';
 		$action = $this->typesEnum[$type];
+		$actionMsg = __d('auditable', $this->settings['formats'][$action]);
 		
 		switch($type)
 		{
@@ -93,7 +94,7 @@ class AuditorHelper extends AppHelper
 				$placeHolders['action'] = __d('auditable', 'modified');
 				
 				foreach($data as $field => $changes)
-					$humanDiff .= $prepend . String::insert($this->settings['formats']['modify'], array('field' => $field, 'old' => $changes['old'], 'new' => $changes['new'])) . $pospend;
+					$humanDiff .= $prepend . String::insert($actionMsg, array('field' => $field, 'old' => $changes['old'], 'new' => $changes['new'])) . $pospend;
 				
 				break;
 				
@@ -105,7 +106,7 @@ class AuditorHelper extends AppHelper
 					$placeHolders['action'] = __d('auditable', 'deleted');
 				
 				foreach($data as $field => $value)
-					$humanDiff .= $prepend . String::insert($this->settings['formats'][$action], compact('field', 'value')) . $pospend;
+					$humanDiff .= $prepend . String::insert($actionMsg, compact('field', 'value')) . $pospend;
 				
 				break;
 				
