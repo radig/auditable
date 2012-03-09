@@ -119,7 +119,7 @@ class AuditableBehavior extends ModelBehavior
 		
 		$this->settings[$Model->alias] = array_merge($this->defaults, $config);
 
-		if($this->settings[$Model->name]['auditSql'])
+		if($this->settings[$Model->alias]['auditSql'])
 		{
 			// Força o recurso de salvar query, idependente do modo da aplicação
 			$ds = $Model->getDataSource();
