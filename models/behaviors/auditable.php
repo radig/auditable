@@ -125,7 +125,7 @@ class AuditableBehavior extends ModelBehavior
 			$config = array();
 		}
 		
-		$this->settings[$Model->name] = array_merge($this->defaults, $config);
+		$this->settings[$Model->alias] = array_merge($this->defaults, $config);
 
 		if($this->settings[$Model->alias]['auditSql'])
 		{
@@ -172,7 +172,7 @@ class AuditableBehavior extends ModelBehavior
 		parent::beforeSave($Model);
 		$this->autoUpdateConfig();
 		
-		$action = ((isset($Model->data[$Model->name]['id']) && !empty($Model->data[$Model->name]['id'])) || !empty($Model->id)) ? 'modify' : 'create';
+		$action = ((isset($Model->data[$Model->alias]['id']) && !empty($Model->data[$Model->alias]['id'])) || !empty($Model->id)) ? 'modify' : 'create';
 		
 		$this->logResponsible($Model, $action);
 
@@ -197,7 +197,7 @@ class AuditableBehavior extends ModelBehavior
 		
 		$action = $created ? 'create' : 'modify';
 
-		if($this->settings[$Model->name]['auditSql'])
+		if($this->settings[$Model->alias]['auditSql'])
 		{
 			$this->logQuery($Model, $action);
 		}
@@ -230,7 +230,7 @@ class AuditableBehavior extends ModelBehavior
 	{
 		parent::afterDelete($Model);
 
-		if($this->settings[$Model->name]['auditSql'])
+		if($this->settings[$Model->alias]['auditSql'])
 		{
 			$this->logQuery($Model, 'delete');
 		}
@@ -243,7 +243,7 @@ class AuditableBehavior extends ModelBehavior
 	 */
 	public function settings(&$Model)
 	{
-		return $this->settings[$Model->name];
+		return $this->settings[$Model->alias];
 	}
 	
 	/**
@@ -260,17 +260,17 @@ class AuditableBehavior extends ModelBehavior
 			return;
 		}
 		
-		$createdByField = $this->settings[$Model->name]['fields']['created'];
-		$modifiedByField = $this->settings[$Model->name]['fields']['modified'];
+		$createdByField = $this->settings[$Model->alias]['fields']['created'];
+		$modifiedByField = $this->settings[$Model->alias]['fields']['modified'];
 		
 		if($create && $Model->schema($createdByField) !== null)
 		{
-			$Model->data[$Model->name][$createdByField] = $this->activeUserId;
+			$Model->data[$Model->alias][$createdByField] = $this->activeUserId;
 		}
 		
 		if(!$create && $Model->schema($modifiedByField) !== null)
 		{
-			$Model->data[$Model->name][$modifiedByField] = $this->activeUserId;
+			$Model->data[$Model->alias][$modifiedByField] = $this->activeUserId;
 		}
 	}
 	
@@ -283,9 +283,9 @@ class AuditableBehavior extends ModelBehavior
 	 */
 	protected function takeSnapshot(&$Model)
 	{
-		if(isset($Model->data[$Model->name]['id']) && !empty($Model->data[$Model->name]['id']))
+		if(isset($Model->data[$Model->alias]['id']) && !empty($Model->data[$Model->alias]['id']))
 		{
-			$id = $Model->data[$Model->name]['id'];
+			$id = $Model->data[$Model->alias]['id'];
 		}
 		else
 		{
@@ -293,12 +293,12 @@ class AuditableBehavior extends ModelBehavior
 		}
 		
 		$aux = $Model->find('first', array(
-			'conditions' => array("{$Model->name}.id" => $id),
+			'conditions' => array("{$Model->alias}.id" => $id),
 			'recursive' => -1
 			)
 		);
 		
-		$this->snapshots[$Model->name] = $aux[$Model->name];
+		$this->snapshots[$Model->alias] = $aux[$Model->alias];
 	}
 	
 	/**
@@ -322,22 +322,22 @@ class AuditableBehavior extends ModelBehavior
 			case 'create':
 				$diff = array();
 				
-				if(isset($Model->data[$Model->name]))
-					$diff = $Model->data[$Model->name];
+				if(isset($Model->data[$Model->alias]))
+					$diff = $Model->data[$Model->alias];
 				
 				break;
 			
 			case 'modify':
-				$diff = $this->diffRecords($this->snapshots[$Model->name], $Model->data[$Model->name]);
+				$diff = $this->diffRecords($this->snapshots[$Model->alias], $Model->data[$Model->alias]);
 				break;
 			
 			case 'delete':
-				$diff = $this->snapshots[$Model->name];
+				$diff = $this->snapshots[$Model->alias];
 				break;
 		}
 		
 		// Remoção dos campos ignorados
-		foreach($this->settings[$Model->name]['skip'] as $field)
+		foreach($this->settings[$Model->alias]['skip'] as $field)
 		{
 			if(isset($diff[$field]))
 				unset($diff[$field]);
@@ -350,7 +350,7 @@ class AuditableBehavior extends ModelBehavior
 		$toSave = array(
 			'Logger' => array(
 				'user_id' => $this->activeUserId ? $this->activeUserId : 0,
-				'model_alias' => $Model->name,
+				'model_alias' => $Model->alias,
 				'model_id' => $Model->id,
 				'type' => $this->typesEnum[$action] ? $this->typesEnum[$action] : 0,
 			),
