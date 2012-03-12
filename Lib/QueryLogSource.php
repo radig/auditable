@@ -20,33 +20,26 @@
 class QueryLogSource {
 
 	/**
-	 * Se vai ou não manter uma cópia
-	 * interna do log de queries.
-	 *
-	 * @var boolean
-	 */
-	private $cacheQuery;
-
-	/**
+	 * Armazena as queries cacheadas.
 	 *
 	 * @var array
 	 */
 	private $cachedQueries = array();
+
+	private $mapActionSql = array(
+		'create' => 'INSERT',
+		'modify' => 'UPDATE',
+		'delete' => 'DELETE',
+	);
 
 	/**
 	 * Inicializar a propriedade DataSource
 	 * e habilita o debug de queries.
 	 *
 	 * @param Model $Model
-	 * @param bool cacheEntries Especifica se a lib deve
-	 * guardar uma cópia do log de queries internamente
-	 * para previnir exclusão por parte de outros behaviors/
-	 * modelos.
 	 */
-	public function __construct(&$Model = null, $cacheEntries = false)
+	public function __construct(&$Model = null)
 	{
-		$this->cacheQuery = $cacheEntries;
-
 		if($Model !== null)
 		{
 			// Habilita Log das queries
@@ -81,13 +74,15 @@ class QueryLogSource {
 	 * @param Model $Model Instancia do modelo que terá
 	 * as queries retornadas.
 	 *
+	 * @param  string $action 'create' | 'modify' | 'delete'
+	 *
 	 * @param bool $associateds Habilita ou não o retorno
 	 * de queries geradas por modelos relacionados. Não
 	 * implementado ainda.
 	 *
 	 * @return array
 	 */
-	public function getModelQueries($Model, $associateds = false)
+	public function getModelQueries($Model, $action = 'create', $associateds = false)
 	{
 		$queries = $this->getCleanLog($Model);
 		$valids = array(); // queries do modelo Model
@@ -96,11 +91,13 @@ class QueryLogSource {
 		foreach ($queries as $query)
 		{
 			// Guarda apenas queries do modelo atual que não seja SELECT
-			if(strpos($query, $table) !== false && strpos($query, 'SELECT') !== 0)
+			if(strpos($query, $table) !== false && strpos($query, $this->mapActionSql[$action]) !== false)
 			{
 				$valids[] = $query;
 			}
 		}
+
+		ob_flush();
 
 		return $valids;
 	}
@@ -119,15 +116,12 @@ class QueryLogSource {
 		if(method_exists($ds, 'getLog'))
 		{
 			$log = $ds->getLog(false, false);
-			$log = $log['log'];
+			$diff = Set::diff($log['log'], $this->cachedQueries);
 
-			foreach($log as $entry)
+			$this->cachedQueries = $log['log'];
+
+			foreach($diff as $entry)
 				$queries[] = $entry['query'];
-
-			if($this->cacheQuery)
-			{
-				$this->cachedQueries = $queries;
-			}
 		}
 
 		return $queries;

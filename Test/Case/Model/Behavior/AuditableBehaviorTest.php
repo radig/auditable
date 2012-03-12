@@ -66,18 +66,24 @@ class AuditableTest extends CakeTestCase {
 
 	public $Model = null;
 
+	public $Logger = null;
+
 
 	public function startTest()
 	{
 		AuditableConfig::$responsibleId = 0;
 		AuditableConfig::$responsibleModel = 'User';
 
-		$this->Model = Classregistry::init('User');
+		$this->Model =& Classregistry::init('User');
+		$this->Logger =& Classregistry::init('Auditable.Logger');
+
+		AuditableConfig::$Logger =& $this->Logger;
 	}
 
 	public function endTest()
 	{
 		unset($this->Model);
+		unset($this->Logger);
 		ClassRegistry::flush();
 	}
 
@@ -120,5 +126,126 @@ class AuditableTest extends CakeTestCase {
 		);
 
 		$this->assertEqual($expected, $result);
+	}
+
+	public function testAddAuditable()
+	{
+		$this->Model->save(array(
+			'username' => 'dotti',
+			'email' => 'dotti@radig.com.br'
+			)
+		);
+
+		$log = $this->Logger->find('first', array('order' => array('id' => 'desc'), 'fields' => array('id')));
+
+		$result = $this->Logger->get($log['Logger']['id']);
+
+		// ignora dados temporais não relevantes
+		unset($result['Logger']['created'], $result['Logger']['modified']);
+
+		$expected = array(
+			'id' => $log['Logger']['id'],
+			'responsible_id' => 0,
+			'model_alias' => 'User',
+			'model_id' => 3,
+			'log_detail_id' => 2,
+			'type' => 1
+		);
+
+		$this->assertEqual($result['Logger'], $expected);
+
+		$difference = call_user_func(AuditableConfig::$serialize, array('username' => 'dotti', 'email' => 'dotti@radig.com.br', 'id' => '3'));
+
+		// checa a diferança
+		$this->assertEqual($result['LogDetail']['difference'], $difference);
+
+		// checa statement
+		$this->assertRegExp('/^INSERT INTO .+ \(`username`\, `email`\, `modified`\, `created`\) VALUES \(\'dotti\'\, \'dotti@radig.com.br\'.*/', $result['LogDetail']['statement']);
+
+		// checa o responsável
+		$this->assertEqual($result['Responsible'], array('id' => null, 'username' => null, 'email' => null, 'created' => null, 'modified' => null, 'created_by' => null, 'modified_by' => null));
+
+		unset($result['User']['created'], $result['User']['modified']);
+
+		// checa o "resource"
+		$this->assertEqual($result['User'], array('username' => 'dotti', 'email' => 'dotti@radig.com.br', 'id' => '3', 'created_by' => null, 'modified_by' => null));
+	}
+
+	public function testLogResponsible()
+	{
+		AuditableConfig::$responsibleId = 1;
+
+		$this->Model->save(array(
+			'username' => 'radig',
+			'email' => 'teste@radig.com.br'
+			)
+		);
+
+		$log = $this->Logger->find('first', array('order' => array('id' => 'desc'), 'fields' => array('id')));
+
+		$result = $this->Logger->get($log['Logger']['id']);
+
+		// checa o responsável
+		$this->assertEqual($result['Responsible'], array('id' => '1', 'username' => 'userA', 'email' => 'user_a@radig.com.br', 'created' => '2012-03-08 15:20:10', 'modified' => '2012-03-08 15:20:10', 'created_by' => null, 'modified_by' => null));
+	}
+
+	public function testDelete()
+	{
+		$this->Model->delete(2);
+
+		$log = $this->Logger->find('first', array('order' => array('id' => 'desc'), 'fields' => array('id')));
+
+		$result = $this->Logger->get($log['Logger']['id']);
+
+		$this->assertEqual($result['Logger']['type'], '3');
+
+		$this->assertRegExp('/^DELETE.*/', $result['LogDetail']['statement']);
+	}
+
+	public function testMofify()
+	{
+		AuditableConfig::$responsibleId = 2;
+
+		$this->Model->save(array(
+			'id' => 1,
+			'username' => 'userChanged'
+			)
+		);
+
+		$log = $this->Logger->find('first', array('order' => array('id' => 'desc'), 'fields' => array('id')));
+
+		$result = $this->Logger->get($log['Logger']['id']);
+
+		$this->assertEqual($result['Logger']['type'], '2');
+
+		$difference = call_user_func(AuditableConfig::$serialize, array('username' => array('old' => 'userA', 'new' => 'userChanged')));
+		$this->assertEqual($result['LogDetail']['difference'], $difference);
+
+		$this->assertRegExp('/^UPDATE.*/', $result['LogDetail']['statement']);
+	}
+
+	public function testSetters()
+	{
+		$this->Model->setLogger($this->Logger);
+
+		$this->Model->setActiveResponsible(2);
+
+		$settings = $this->Model->getAuditableSettings(false);
+
+		$this->assertSame($this->Logger, $settings['Logger']);
+
+		$this->assertEqual($settings['activeResponsibleId'], 2);
+	}
+
+	public function testUsingInvalidModel()
+	{
+		$this->Model->setLogger(new Object());
+
+		$this->Model->save(array('username' => 'lala', 'email' => 'lala@radig.com.br'));
+
+		$count = $this->Logger->find('count');
+
+		// Só contém 1 registro do fixture, nenhum log gerado
+		$this->assertEqual($count, 1);
 	}
 }

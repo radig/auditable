@@ -72,7 +72,7 @@ class AuditableBehavior extends ModelBehavior
 	 * @var mixed Pode ser um int, string (uuid) ou qualquer outro campo tipo de campo
 	 * primário.
 	 */
-	protected $activeUserId = null;
+	protected $activeResponsibleId = null;
 
 	/**
 	 * Referência para o modelo que persistirá
@@ -105,7 +105,7 @@ class AuditableBehavior extends ModelBehavior
 	{
 		parent::__construct();
 
-		$this->activeUserId =& AuditableConfig::$responsibleId;
+		$this->activeResponsibleId =& AuditableConfig::$responsibleId;
 		$this->Logger =& AuditableConfig::$Logger;
 		$this->QueryLogSource = new QueryLogSource();
 	}
@@ -143,24 +143,24 @@ class AuditableBehavior extends ModelBehavior
 	 * Passa referência para modelo responsável por persistir os logs
 	 *
 	 * @param Model $Model
-	 * @param Logger $L
+	 * @param Model $L
 	 */
-	public function setLogger(&$Model, Logger &$L)
+	public function setLogger(&$Model, $L)
 	{
-		$this->Logger = $L;
+		$this->Logger =& $L;
 	}
 
 	/**
 	 * Permite a definição do usuário ativo.
 	 *
-	 * @param int $userId
+	 * @param int $responsibleId
 	 */
-	public function setActiveUser(&$Model, $userId)
+	public function setActiveResponsible(&$Model, $responsibleId)
 	{
-		if(empty($userId))
+		if(empty($responsibleId))
 			return false;
 
-		$this->activeUserId = $userId;
+		$this->activeResponsibleId = $responsibleId;
 
 		return true;
 	}
@@ -234,9 +234,19 @@ class AuditableBehavior extends ModelBehavior
 	 *
 	 * @param Model $Model
 	 */
-	public function getAuditableSettings(&$Model)
+	public function getAuditableSettings(&$Model, $local = true)
 	{
-		return $this->settings[$Model->alias];
+		if($local === true)
+		{
+			return $this->settings[$Model->alias];
+		}
+
+		$global = array(
+			'Logger' => $this->Logger,
+			'activeResponsibleId' => $this->activeResponsibleId
+		);
+
+		return $global;
 	}
 
 	/**
@@ -248,17 +258,17 @@ class AuditableBehavior extends ModelBehavior
 	 */
 	protected function logResponsible(&$Model, $create = true)
 	{
-		if(empty($this->activeUserId))
+		if(empty($this->activeResponsibleId))
 			return;
 
 		$createdByField = $this->settings[$Model->alias]['fields']['created'];
 		$modifiedByField = $this->settings[$Model->alias]['fields']['modified'];
 
 		if($create && $Model->schema($createdByField) !== null)
-			$Model->data[$Model->alias][$createdByField] = $this->activeUserId;
+			$Model->data[$Model->alias][$createdByField] = $this->activeResponsibleId;
 
 		if(!$create && $Model->schema($modifiedByField) !== null)
-			$Model->data[$Model->alias][$modifiedByField] = $this->activeUserId;
+			$Model->data[$Model->alias][$modifiedByField] = $this->activeResponsibleId;
 	}
 
 	/**
@@ -296,7 +306,7 @@ class AuditableBehavior extends ModelBehavior
 		// Se não houver modelo configurado para salvar o log, aborta
 		if($this->checkLogModels() === false)
 		{
-			CakeLog::write(LOG_WARNING, __d('auditable', "You need to define AuditableConfig::$Logger"));
+			CakeLog::write(LOG_WARNING, __d('auditable', 'You need to define AuditableConfig::$Logger'));
 			return;
 		}
 
@@ -308,11 +318,11 @@ class AuditableBehavior extends ModelBehavior
 
 		$encoded = $this->buildEncodedMessage($action, $diff);
 
-		$statement = $this->getQuery($Model);
+		$statement = $this->getQuery($Model, $action);
 
 		$toSave = array(
 			'Logger' => array(
-				'user_id' => $this->activeUserId ?: 0,
+				'responsible_id' => $this->activeResponsibleId ?: 0,
 				'model_alias' => $Model->alias,
 				'model_id' => $Model->id,
 				'type' => $this->typesEnum[$action] ?: 0,
@@ -323,9 +333,13 @@ class AuditableBehavior extends ModelBehavior
 			)
 		);
 
+		$this->QueryLogSource->disable($this->Logger);
+
 		// Salva a entrada nos logs. Caso haja falha, usa o Log default do Cake para registrar a falha
 		if($this->Logger->saveAssociated($toSave) === false)
 			CakeLog::write(LOG_WARNING, sprintf(__d('auditable', "Can't save log entry for statement: \"%s'\""), $statement));
+
+		$this->QueryLogSource->enable($this->Logger);
 	}
 
 	/**
@@ -371,11 +385,12 @@ class AuditableBehavior extends ModelBehavior
 	 * e a retorna.
 	 *
 	 * @param Model $Model
+	 * @param  string $action 'create'|'modify'|'delete'
 	 * @return string $statement
 	 */
-	private function getQuery($Model)
+	private function getQuery($Model, $action)
 	{
-		$queries = $this->QueryLogSource->getModelQueries($Model);
+		$queries = $this->QueryLogSource->getModelQueries($Model, $action);
 		$statement = '';
 
 		if(!empty($queries))
