@@ -6,7 +6,7 @@ class AuditableConfig
 	 * 
 	 * @var array
 	 */
-	static public $userId = null;
+	static public $responsibleId = null;
 
 	/**
 	 * Nome do modelo que armazena os dados
@@ -17,7 +17,7 @@ class AuditableConfig
 	 * 
 	 * @var string
 	 */
-	static public $userModel = 'User';
+	static public $responsibleModel = 'User';
 	
 	/**
 	 * Referência estática para os dados
