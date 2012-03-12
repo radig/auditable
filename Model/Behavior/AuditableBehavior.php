@@ -48,6 +48,7 @@ class AuditableBehavior extends ModelBehavior
 	 * @var array
 	 */
 	protected $defaults = array(
+		'priority' => 1,
 		'auditSql' => true,
 		'skip' => array(
 			'created',
@@ -124,10 +125,11 @@ class AuditableBehavior extends ModelBehavior
 	 */
 	public function setup(&$Model, $config = array())
 	{
-		if (!is_array($config) || isset($config[0]))
-		{
+		if(!is_array($config) || isset($config[0]))
 			$config = $this->defaults;
-		}
+
+		if(isset($config['priority']))
+			unset($config['priority']);
 
 		$this->settings[$Model->alias] = array_merge($this->defaults, $config);
 

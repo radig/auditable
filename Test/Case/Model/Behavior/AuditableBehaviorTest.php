@@ -27,6 +27,7 @@ if(!class_exists('User2'))
 
 		public $actsAs = array(
 			'Auditable.Auditable' => array(
+				'priority' => 1,
 				'auditSql' => false,
 				'skip' => array(
 					'modified'
@@ -90,6 +91,7 @@ class AuditableTest extends CakeTestCase {
 		$User2 = Classregistry::init('User2');
 		$result = $User2->getAuditableSettings();
 		$expected = array(
+			'priority' => 1,
 			'auditSql' => false,
 			'skip' => array(
 				'modified'
@@ -105,6 +107,7 @@ class AuditableTest extends CakeTestCase {
 		$User3 = Classregistry::init('User3');
 		$result = $User3->getAuditableSettings();
 		$expected = array(
+			'priority' => 1,
 			'auditSql' => true,
 			'skip' => array(
 				'created',
