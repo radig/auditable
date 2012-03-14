@@ -19,6 +19,7 @@
  */
 
 App::uses('AuditableConfig', 'Auditable.Lib');
+App::uses('String', 'Utility');
 class AuditorHelper extends AppHelper
 {
 	/**

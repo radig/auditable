@@ -17,6 +17,9 @@
  * @package radig
  * @subpackage Auditable.Lib
  */
+
+App::uses('Set', 'Utility');
+
 class QueryLogSource {
 
 	/**

@@ -32,6 +32,7 @@
  */
 App::uses('AuditableConfig', 'Auditable.Lib');
 App::uses('QueryLogSource', 'Auditable.Lib');
+App::uses('CakeLog', 'Log');
 
 class AuditableBehavior extends ModelBehavior
 {
