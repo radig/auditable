@@ -57,6 +57,7 @@ class LoggerTest extends CakeTestCase {
 				'model_alias' => 'User',
 				'model_id' => 1,
 				'log_detail_id' => 1,
+				'type' => 1,
 				'created'  => '2012-03-08 15:20:10',
 				'modified'  => '2012-03-08 15:20:10'
 			)
@@ -73,6 +74,7 @@ class LoggerTest extends CakeTestCase {
 				'model_alias' => 'User',
 				'model_id' => 1,
 				'log_detail_id' => 1,
+				'type' => 1,
 				'created'  => '2012-03-08 15:20:10',
 				'modified'  => '2012-03-08 15:20:10'
 			),
@@ -95,10 +97,11 @@ class LoggerTest extends CakeTestCase {
 		$expected = array(
 			'Logger' => array(
 				'id'  => 1,
-				'responsible_id'  => 0,
+				'responsible_id' => 0,
 				'model_alias' => 'User',
 				'model_id' => 1,
 				'log_detail_id' => 1,
+				'type' => 1,
 				'created'  => '2012-03-08 15:20:10',
 				'modified'  => '2012-03-08 15:20:10'
 			),
@@ -114,7 +117,9 @@ class LoggerTest extends CakeTestCase {
 				'username' => null,
 				'email' => null,
 				'created' => null,
-				'modified' => null
+				'modified' => null,
+				'created_by' => null,
+				'modified_by' => null
 			)
 		);
 
@@ -130,6 +135,7 @@ class LoggerTest extends CakeTestCase {
 				'model_alias' => 'User',
 				'model_id' => 1,
 				'log_detail_id' => 1,
+				'type' => 1,
 				'created'  => '2012-03-08 15:20:10',
 				'modified'  => '2012-03-08 15:20:10'
 			),
@@ -161,6 +167,7 @@ class LoggerTest extends CakeTestCase {
 				'model_alias' => 'User',
 				'model_id' => 1,
 				'log_detail_id' => 1,
+				'type' => 1,
 				'created'  => '2012-03-08 15:20:10',
 				'modified'  => '2012-03-08 15:20:10'
 			),
@@ -176,14 +183,18 @@ class LoggerTest extends CakeTestCase {
 				'username' => null,
 				'email' => null,
 				'created' => null,
-				'modified' => null
+				'modified' => null,
+				'created_by' => null,
+				'modified_by' => null
 			),
 			'User' => array(
-				'id'  => '1',
-				'username'  => 'usarA',
-				'email' => 'user_b@radig.com.br',
+				'id'  => 1,
+				'username'  => 'userA',
+				'email' => 'user_a@radig.com.br',
 				'created'  => '2012-03-08 15:20:10',
-				'modified'  => '2012-03-08 15:20:10'
+				'modified'  => '2012-03-08 15:20:10',
+				'created_by' => null,
+				'modified_by' => null
 			)
 		);
 
