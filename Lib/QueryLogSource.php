@@ -97,8 +97,6 @@ class QueryLogSource {
 			}
 		}
 
-		ob_flush();
-
 		return $valids;
 	}
 
