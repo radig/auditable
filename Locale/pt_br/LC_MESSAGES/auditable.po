@@ -23,3 +23,13 @@ msgstr "Não foi possível salvar entrada no log para declaração: \"%s\""
 
 msgid "You need to define AuditableConfig::$Logger"
 msgstr "Você precisa definir AuditableConfig::$Logger"
+
+# Tipos de log
+msgid "create"
+msgstr "criação"
+msgid "modify"
+msgstr "modificação"
+msgid "delete"
+msgstr "exclusão"
+msgid "undefined"
+msgstr "indefinida"
