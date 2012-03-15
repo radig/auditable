@@ -5,24 +5,24 @@
  * table.
  * Also use a table called 'logs' (or other configurated for that) to save created/edited action
  * for continuous changes history.
- * 
+ *
  * Code comments in brazilian portuguese.
  * -----
- * 
+ *
  * Behavior que permite log automágico de ações executadas em uma aplicação com
  * usuários autenticados.
- * 
+ *
  * Armazena informações do usuário que criou um registro, e do usuário
  * que alterou o registro no próprio registro.
- * 
+ *
  * Ainda utiliza um modelo auxiliar Logger (ou outro configurado para isso) para registrar
  * ações de inserção/edição e manter um histórico contínuo de alterações.
- * 
+ *
  * PHP version > 5.3.1
- * 
+ *
  * Licensed under The MIT License
  * Redistributions of files must retain the above copyright notice.
- * 
+ *
  * @copyright 2011-2012, Radig - Soluções em TI, www.radig.com.br
  * @link http://www.radig.com.br
  * @license http://www.opensource.org/licenses/mit-license.php The MIT License
@@ -36,14 +36,14 @@ class AuditableBehavior extends ModelBehavior
 {
 	/**
 	 * Configurações correntes do Behavior
-	 * 
+	 *
 	 * @var array
 	 */
 	public $settings = array();
-	
+
 	/**
 	 * Configurações padrões do Behavior
-	 * 
+	 *
 	 * @var array
 	 */
 	protected $defaults = array(
@@ -54,55 +54,55 @@ class AuditableBehavior extends ModelBehavior
 			'modified' => 'modified_by'
 		)
 	);
-	
+
 	protected $typesEnum = array(
 		'create' => 1,
 		'modify' => 2,
 		'delete' => 3
 	);
-	
+
 	/**
 	 * ID do usuário ativo
-	 * 
+	 *
 	 * @var mixed Pode ser um int, string (uuid) ou qualquer outro campo tipo de campo
 	 * primário.
 	 */
 	protected $activeUserId = null;
-	
+
 	/**
 	 * Referência para o modelo que persistirá
 	 * as informações
-	 * 
+	 *
 	 * @var Model
 	 */
 	protected $Logger = null;
-	
+
 	/**
 	 * Guarda o instântaneo do registro antes
 	 * de ser atualizado. O valor é usado após
 	 * confirmação da alteração no registro e depois
 	 * é limpado deste 'cache'
-	 * 
+	 *
 	 * @var array
 	 */
 	protected $snapshots = array();
-	
+
 	/**
-	 *  
+	 *
 	 */
 	public function __construct() {
 		parent::__construct();
-		
+
 		$this->activeUserId =& AuditableConfig::$userId;
 		$this->Logger =& AuditableConfig::$Logger;
 	}
-	
+
 	/**
 	 * Chamado pelo CakePHP para iniciar o behavior
 	 *
 	 * @param Model $Model
 	 * @param array $config
-	 * 
+	 *
 	 * Opções de configurações:
 	 *   auditSql       : bool. Habilita ou não o log das queries
 	 *   skip           : array. Lista com nome das ações que devem ser ignoradas pelo log.
@@ -116,7 +116,7 @@ class AuditableBehavior extends ModelBehavior
 		{
 			$config = array();
 		}
-		
+
 		$this->settings[$Model->alias] = array_merge($this->defaults, $config);
 
 		if($this->settings[$Model->alias]['auditSql'])
@@ -126,33 +126,33 @@ class AuditableBehavior extends ModelBehavior
 			$ds->fullDebug = true;
 		}
 	}
-	
+
 	/**
 	 * Passa referência para modelo responsável por persistir os logs
-	 * 
+	 *
 	 * @param Model $Model
-	 * @param Logger $L 
+	 * @param Logger $L
 	 */
 	public function setLogger(&$Model, Logger &$L)
 	{
 		$this->Logger = $L;
 	}
-	
+
 	/**
 	 * Permite a definição do usuário ativo.
-	 * 
+	 *
 	 * @param int $userId
 	 */
 	public function setActiveUser(&$Model, $userId)
 	{
 		if(empty($userId))
 			return false;
-		
+
 		$this->activeUserId = $userId;
-		
+
 		return true;
 	}
-	
+
 	/**
 	 *
 	 * @param Model $Model
@@ -161,22 +161,22 @@ class AuditableBehavior extends ModelBehavior
 	public function beforeSave(&$Model)
 	{
 		parent::beforeSave($Model);
-		
-		$action = ((isset($Model->data[$Model->alias]['id']) && !empty($Model->data[$Model->alias]['id'])) || !empty($Model->id)) ? 'modify' : 'create';
-		
-		$this->logResponsible($Model, $action);
-		
+
+		$action = $this->getAction($Model);
+
+		$this->logResponsible($Model, $action == 'create');
+
 		if($action == 'modify')
 		{
 			$this->takeSnapshot($Model);
 		}
-		
+
 		return true;
 	}
-	
+
 	/**
-	 * 
-	 * 
+	 *
+	 *
 	 * @param Model $Model
 	 * @param bool $created
 	 * @return bool
@@ -184,55 +184,55 @@ class AuditableBehavior extends ModelBehavior
 	public function afterSave(&$Model, $created)
 	{
 		parent::afterSave($Model, $created);
-		
+
 		$action = $created ? 'create' : 'modify';
-		
+
 		$this->logQuery($Model, $action);
-		
+
 		return true;
 	}
-	
+
 	/**
-	 * 
-	 * 
+	 *
+	 *
 	 * @param Model $Model
 	 * @param bool $cascade
 	 */
 	public function beforeDelete($Model, $cascade = true)
 	{
 		parent::beforeDelete($Model, $cascade);
-		
+
 		$this->takeSnapshot($Model);
-		
+
 		return true;
 	}
-	
+
 	/**
-	 * 
-	 * 
+	 *
+	 *
 	 * @param Model $Model
 	 */
 	public function afterDelete($Model)
 	{
 		parent::afterDelete($Model);
-		
+
 		$this->logQuery($Model, 'delete');
 	}
 
 	/**
 	 * Recupera as definições para o modelo corrente
-	 * 
+	 *
 	 * @param Model $Model
 	 */
 	public function settings(&$Model)
 	{
 		return $this->settings[$Model->alias];
 	}
-	
+
 	/**
 	 * Altera dados que estão sendo salvos para incluir responsável pela
 	 * ação.
-	 * 
+	 *
 	 * @param Model $Model
 	 * @param bool $create
 	 */
@@ -242,26 +242,26 @@ class AuditableBehavior extends ModelBehavior
 		{
 			return;
 		}
-		
+
 		$createdByField = $this->settings[$Model->alias]['fields']['created'];
 		$modifiedByField = $this->settings[$Model->alias]['fields']['modified'];
-		
+
 		if($create && $Model->schema($createdByField) !== null)
 		{
 			$Model->data[$Model->alias][$createdByField] = $this->activeUserId;
 		}
-		
+
 		if(!$create && $Model->schema($modifiedByField) !== null)
 		{
 			$Model->data[$Model->alias][$modifiedByField] = $this->activeUserId;
 		}
 	}
-	
+
 	/**
 	 * Guarda um instântaneo do registro que está sendo alterado
-	 * 
+	 *
 	 * @param Model $Model
-	 * 
+	 *
 	 * @return void
 	 */
 	protected function takeSnapshot(&$Model)
@@ -274,20 +274,20 @@ class AuditableBehavior extends ModelBehavior
 		{
 			$id = $Model->id;
 		}
-		
+
 		$aux = $Model->find('first', array(
 			'conditions' => array("{$Model->alias}.id" => $id),
 			'recursive' => -1
 			)
 		);
-		
+
 		$this->snapshots[$Model->alias] = $aux[$Model->alias];
 	}
-	
+
 	/**
 	 * Constrói e persiste informações relevantes sobre a transação através
 	 * do Modelo Logger
-	 * 
+	 *
 	 * @param Model $Model
 	 * @param string $action
 	 */
@@ -304,32 +304,32 @@ class AuditableBehavior extends ModelBehavior
 		{
 			case 'create':
 				$diff = array();
-				
+
 				if(isset($Model->data[$Model->alias]))
 					$diff = $Model->data[$Model->alias];
-				
+
 				break;
-			
+
 			case 'modify':
 				$diff = $this->diffRecords($this->snapshots[$Model->alias], $Model->data[$Model->alias]);
 				break;
-			
+
 			case 'delete':
 				$diff = $this->snapshots[$Model->alias];
 				break;
 		}
-		
+
 		// Remoção dos campos ignorados
 		foreach($this->settings[$Model->alias]['skip'] as $field)
 		{
 			if(isset($diff[$field]))
 				unset($diff[$field]);
 		}
-		
+
 		$encoded = $this->buildEncodedMessage($action, $diff);
-		
+
 		$statement = $this->getQuery($Model);
-		
+
 		$toSave = array(
 			'Logger' => array(
 				'user_id' => $this->activeUserId ?: 0,
@@ -342,58 +342,58 @@ class AuditableBehavior extends ModelBehavior
 				'statement' => $statement,
 			)
 		);
-		
+
 		// Salva a entrada nos logs. Caso haja falha, usa o Log default do Cake para registrar a falha
 		if($this->Logger->saveAssociated($toSave) === false)
 		{
 			CakeLog::write(LOG_WARNING, sprintf(__d('auditable', "Can't save log entry for statement: \"%s'\""), $statement));
 		}
 	}
-	
+
 	/**
 	 * Codifica as alterações no registro (ou dados de criação) em um formato
 	 * serializado, que é passado como primeiro parâmetro da função.
 	 * Caso não seja passado uma função válida, a serialize padrão é usada.
-	 * 
-	 * 
+	 *
+	 *
 	 * @param string $action create|modify|delete
 	 * @param array $data Dados do registro
-	 * 
+	 *
 	 * @return string Dados $data serializados
 	 */
 	private function buildEncodedMessage($action, $data)
 	{
 		$encode = array();
-		
+
 		switch($action)
 		{
 			case 'modify':
 				foreach($data as $field => $changes)
 					$encode[$field] = $changes;
-				
+
 				break;
-				
+
 			case 'create':
 			case 'delete':
 				foreach($data as $field => $value)
 					$encode[$field] = $value;
 				break;
 		}
-		
+
 		$func = 'serialize';
-		
+
 		if(is_callable(AuditableConfig::$serialize))
 		{
 			$func = AuditableConfig::$serialize;
 		}
-		
+
 		return call_user_func($func, $encode);
 	}
-	
+
 	/**
 	 * Recupera a última query executada pelo Modelo->DataSource
 	 * e a retorna.
-	 * 
+	 *
 	 * @param Model $Model
 	 * @return string $statement
 	 */
@@ -401,48 +401,48 @@ class AuditableBehavior extends ModelBehavior
 	{
 		$ds = $Model->getDataSource();
 		$statement = '';
-		
+
 		if(method_exists($ds, 'getLog'))
 		{
 			$logs = $ds->getLog();
 			$logs = array_pop($logs['log']);
 			$statement = $logs['query'];
 		}
-		
+
 		return $statement;
 	}
-	
+
 	/**
 	 * Computa as alterações no registro e retorna um array formatado
 	 * com os valores antigos e novos
-	 * 
+	 *
 	 * 'campo' => array('old' => valor antigo, 'new' => valor novo)
-	 * 
+	 *
 	 * @param array $old
 	 * @param array $new
-	 * 
+	 *
 	 * @return array $formatted
 	 */
 	private function diffRecords($old, $new)
 	{
 		$diff = Set::diff($old, $new);
 		$formatted = array();
-		
+
 		foreach($diff as $key => $value)
 		{
 			if(!isset($old[$key]) || !isset($new[$key]))
 				continue;
-			
+
 			$formatted[$key] = array('old' => $old[$key], 'new' => $new[$key]);
 		}
-		
+
 		return $formatted;
 	}
 
 	/**
 	 * Verifica e prepara os modelos utilizados para salvar os logs
 	 * para que não haja recursão infinita.
-	 * 
+	 *
 	 * @return bool
 	 */
 	private function checkLogModels()
@@ -468,5 +468,27 @@ class AuditableBehavior extends ModelBehavior
 		}
 
 		return true;
+	}
+
+	/**
+	 * Baseado no Modelo passado e seus dados, retorna true
+	 * caso seja a criação de um novo registro ou modificação
+	 * de um registro já existente.
+	 *
+	 * @param Model $Model
+	 *
+	 * @return string 'create' ou 'modify' dependendo da operação
+	 */
+	private function getAction(&$Model)
+	{
+		$isCreate = true;
+
+		if(isset($Model->data[$Model->alias][$Model->primaryKey]) && !empty($Model->data[$Model->alias][$Model->primaryKey]))
+			$isCreate = false;
+
+		else if(!empty($Model->id))
+			$isCreate = false;
+
+		return $isCreate ? 'create' : 'modify';
 	}
 }
