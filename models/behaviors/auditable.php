@@ -395,7 +395,7 @@ class AuditableBehavior extends ModelBehavior
 	 * @param Model $Model
 	 * @return string statements
 	 */
-	private function getQuery($Model)
+	private function getQuery($Model, $action)
 	{
 		$queries = $this->QueryLogSource->getModelQueries($Model, $action);
 		$statement = '';
