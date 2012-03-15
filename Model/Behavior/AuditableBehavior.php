@@ -177,7 +177,7 @@ class AuditableBehavior extends ModelBehavior
 
 		$action = $this->getAction($Model);
 
-		$this->logResponsible($Model, $action);
+		$this->logResponsible($Model, $action === 'create');
 
 		if($action === 'modify')
 			$this->takeSnapshot($Model);
