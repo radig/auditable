@@ -1,5 +1,21 @@
 <?php
 App::uses('AuditableConfig', 'Auditable.Lib');
+/**
+ * Modelo de Exemplo para persistir os logs em algum meio.
+ * Neste caso o modelo utiliza a conexão padrão com o Banco de Dados.
+ *
+ * PHP version > 5.3.1
+ *
+ * Licensed under The MIT License
+ * Redistributions of files must retain the above copyright notice.
+ *
+ * @copyright 2011-2012, Radig - Soluções em TI, www.radig.com.br
+ * @link http://www.radig.com.br
+ * @license http://www.opensource.org/licenses/mit-license.php The MIT License
+ *
+ * @package radig
+ * @subpackage Auditable.Model
+ */
 class Logger extends AppModel
 {
 	public $name = 'Logger';
@@ -65,10 +81,10 @@ class Logger extends AppModel
 
 		if($loadResource)
 		{
-			$Resource = ClassRegistry::init($data[$this->name]['model_alias']);
+			$Resource = ClassRegistry::init($data[$this->alias]['model_alias']);
 
 			$linked = $Resource->find('first', array(
-				'conditions' => array('id' => $data[$this->name]['model_id']),
+				'conditions' => array('id' => $data[$this->alias]['model_id']),
 				'recursive' => -1
 				)
 			);
@@ -76,7 +92,7 @@ class Logger extends AppModel
 
 		if(!empty($linked))
 		{
-			$data[$Resource->name] = $linked[$Resource->name];
+			$data[$Resource->alias] = $linked[$Resource->alias];
 		}
 
 		if(array_search('Responsible', $contain) === false)

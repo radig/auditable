@@ -45,7 +45,7 @@ class LoggerFixture extends CakeTestFixture {
 		array(
 			'id'  => '1',
 			'responsible_id'  => '0',
-			'model_alias' => 'User',
+			'model_alias' => 'Auditable.User',
 			'model_id' => '1',
 			'log_detail_id' => '1',
 			'type' => '1',

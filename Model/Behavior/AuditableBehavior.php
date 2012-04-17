@@ -1,4 +1,7 @@
 <?php
+App::uses('AuditableConfig', 'Auditable.Lib');
+App::uses('QueryLogSource', 'Auditable.Lib');
+App::uses('CakeLog', 'Log');
 /**
  * Behavior to automagic log actions in aplications with authenticated users.
  * Store info about user which created entry, and user which modified an entry at the proper
@@ -30,10 +33,6 @@
  * @package radig
  * @subpackage Auditable.Model.Behavior
  */
-App::uses('AuditableConfig', 'Auditable.Lib');
-App::uses('QueryLogSource', 'Auditable.Lib');
-App::uses('CakeLog', 'Log');
-
 class AuditableBehavior extends ModelBehavior
 {
 	/**
@@ -400,6 +399,15 @@ class AuditableBehavior extends ModelBehavior
 		return $statement;
 	}
 
+	/**
+	 * Recupera a diferença entre o registro antes e após a operação
+	 * do modelo.
+	 *
+	 * @param string $action 'create'|'modify'|'delete'
+	 * @param  Model $Model Referência para o modelo corrente
+	 *
+	 * @return array Campos alterados
+	 */
 	private function getDiff($action, $Model)
 	{
 		$diff = array();

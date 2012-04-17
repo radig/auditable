@@ -14,6 +14,8 @@ class LoggerTest extends CakeTestCase {
 	public function setUp()
 	{
 		$this->Logger = ClassRegistry::init('Auditable.Logger');
+
+		AuditableConfig::$responsibleModel = 'Auditable.User';
 	}
 
 	public function tearDown()
@@ -54,7 +56,7 @@ class LoggerTest extends CakeTestCase {
 			'Logger' => array(
 				'id'  => 1,
 				'responsible_id'  => 0,
-				'model_alias' => 'User',
+				'model_alias' => 'Auditable.User',
 				'model_id' => 1,
 				'log_detail_id' => 1,
 				'type' => 1,
@@ -71,7 +73,7 @@ class LoggerTest extends CakeTestCase {
 			'Logger' => array(
 				'id'  => 1,
 				'responsible_id'  => 0,
-				'model_alias' => 'User',
+				'model_alias' => 'Auditable.User',
 				'model_id' => 1,
 				'log_detail_id' => 1,
 				'type' => 1,
@@ -98,7 +100,7 @@ class LoggerTest extends CakeTestCase {
 			'Logger' => array(
 				'id'  => 1,
 				'responsible_id' => 0,
-				'model_alias' => 'User',
+				'model_alias' => 'Auditable.User',
 				'model_id' => 1,
 				'log_detail_id' => 1,
 				'type' => 1,
@@ -132,7 +134,7 @@ class LoggerTest extends CakeTestCase {
 			'Logger' => array(
 				'id'  => 1,
 				'responsible_id'  => 0,
-				'model_alias' => 'User',
+				'model_alias' => 'Auditable.User',
 				'model_id' => 1,
 				'log_detail_id' => 1,
 				'type' => 1,
@@ -152,8 +154,6 @@ class LoggerTest extends CakeTestCase {
 		);
 
 		$this->assertEqual($result, $expected);
-
-		AuditableConfig::$responsibleModel = 'User';
 	}
 
 	public function testGetWithResourceLog()
@@ -164,7 +164,7 @@ class LoggerTest extends CakeTestCase {
 			'Logger' => array(
 				'id'  => 1,
 				'responsible_id'  => 0,
-				'model_alias' => 'User',
+				'model_alias' => 'Auditable.User',
 				'model_id' => 1,
 				'log_detail_id' => 1,
 				'type' => 1,
