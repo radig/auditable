@@ -11,8 +11,8 @@ h3. Classe AuditableConfig
 
 É a classe que armazena as configurações do Plugin. Tem acesso estático aos seus quatro atributos, que são:
 
-* *userModel* Uma string com o nome do Modelo que armazena os usuários do sistema;
-* *userId* Um inteiro que representa o ID do usuário logado no sistema;
+* *responsibleModel* Uma string com o nome do Modelo que armazena os usuários do sistema;
+* *responsibleId* Um inteiro que representa o ID do usuário logado no sistema;
 * *Logger* A instância de um Modelo válido para salvar os logs;
 * *serialize* Uma string contendo o nome de uma função válida para serializar arrays;
 * *unserialize* Uma string contendo o nome de uma função válida para deserializar strings geradas pela função definida no atributo anterior.
@@ -34,7 +34,7 @@ public function beforeFilter() {
 	parent::beforeFilter();
 	
 	if($this->Auth->loggedIn()) {
-		AuditableConfig::$userId = $this->Auth->user('id');
+		AuditableConfig::$responsibleId = $this->Auth->user('id');
 	}
 	
 	// Caso deseje usar o modelo padrão, utilize como abaixo, caso contrário você pode usar qualquer modelo
