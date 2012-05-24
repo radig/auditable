@@ -14,6 +14,7 @@
  */
 App::uses('Shell', 'Console');
 App::uses('ConnectionManager', 'Model');
+App::uses('CakeSchema', 'Model');
 
 /**
  * Auditable Shell.
@@ -43,14 +44,14 @@ class AuditableShell extends Shell {
 	public $ignoredModels = array(
 		'Log',
 		'LogDetail',
-		'Aro',
-		'Aco',
 	);
 
 	public $ignoredTables = array(
+		'acos',
+		'aros',
+		'aros_acos',
 		'logs',
 		'sessions',
-		'aros_acos',
 		'schema_migrations',
 	);
 
@@ -59,7 +60,8 @@ class AuditableShell extends Shell {
  *
  * @return void
  */
-	public function startup() {
+	public function startup()
+	{
 		$this->out(__d('Auditable', 'Cake Auditable Shell'));
 		$this->hr();
 
@@ -72,7 +74,8 @@ class AuditableShell extends Shell {
  *
  * @return void
  */
-	public function getOptionParser() {
+	public function getOptionParser()
+	{
 		$parser = parent::getOptionParser();
 		return $parser->description(
 			'The Auditable shell.' .
@@ -81,6 +84,10 @@ class AuditableShell extends Shell {
 					'short' => 'c',
 					'default' => 'default',
 					'help' => __d('Auditable', 'Set db config <config>. Uses \'default\' if none is specified.')))
+			->addOption('force', array(
+					'short' => 'f',
+					'boolean' => true,
+					'help' => __d('Auditable', 'Force changes in all tables of database.')))
 			->addSubcommand('insert', array(
 				'help' => __d('Auditable', 'Insert columns \'created_by\' and \'modified_by\' in all database tables.')))
 			->addSubcommand('remove', array(
@@ -92,7 +99,8 @@ class AuditableShell extends Shell {
  *
  * @return void
  */
-	public function main() {
+	public function main()
+	{
 		$this->run();
 	}
 
@@ -101,7 +109,8 @@ class AuditableShell extends Shell {
  *
  * @return void
  */
-	public function run() {
+	public function run()
+	{
 		$null = null;
 		$this->db =& ConnectionManager::getDataSource($this->connection);
 		$this->db->cacheSources = false;
@@ -114,12 +123,7 @@ class AuditableShell extends Shell {
 		}
 
 		try {
-			if($this->args[0] === 'insert')
-				$this->_insert();
-
-			if($this->args[0] === 'remove')
-				$this->_remove();
-
+			$this->_run($this->args[0]);
 			$this->_clearCache();
 
 		} catch (Exception $e) {
@@ -134,86 +138,68 @@ class AuditableShell extends Shell {
 		return true;
 	}
 
-	protected function _insert() {
-		$fieldOptions = array('type' => 'integer', 'null' => true, 'default' => null);
-		$models = $this->_getModels();
+	protected function _run($type)
+	{
+		if(!isset($this->params['force']))
+			$tables = $this->_getModels();
+		else
+			$tables = $this->_getTables();
 
-		$this->out(__d('Auditable', 'Adding fields'));
+		if($type === 'insert')
+			$this->out(__d('Auditable', 'Adding fields'));
+		else
+			$this->out(__d('Auditable', 'Droping fields'));
+
 		$this->out('');
 
-		foreach($models as $modelName)
+		foreach($tables as $tableName => $schema)
 		{
-			$_model = ClassRegistry::init($modelName);
 
-			if(!isset($_model->table) || empty($_model->table) || in_array($_model->table, $this->ignoredTables) || $_model->useDbConfig !== $this->connection)
-				continue;
+			$status = $this->{'_' . $type}($schema, $tableName);
 
-			$schema = $_model->schema(true);
-
-			if(empty($schema))
-				continue;
-
-			$tableName = $_model->tablePrefix ? $_model->tablePrefix . $_model->table : $_model->table;
-
-			$changes = array('add' => array());
-
-			if(!isset($schema['created_by']))
-				$changes[$tableName]['add']['created_by'] = $fieldOptions;
-
-			if(!isset($schema['modified_by']))
-				$changes[$tableName]['add']['modified_by'] = $fieldOptions;
-
-			$sql = $this->db->alterSchema($changes);
-
-			if(empty($sql))
-				continue;
-
-			$status = $this->_execute($sql) ? 'Sucesso' : 'Falha';
-
-			$this->out(sprintf(__d('Auditable', 'Changing table \'%s\': %s'), $tableName, $status));
+			if($status !== null)
+			{
+				$this->out(sprintf(__d('Auditable', 'Changing table \'%s\': %s'), $tableName, $status ? __d('Auditable', 'Success') : __d('Auditable', 'Error')));
+			}
 		}
 	}
 
-	protected function _remove()
+	protected function _insert($schema, $tableName)
 	{
-		$models = $this->_getModels();
+		$fieldOptions = array('type' => 'integer', 'null' => true, 'default' => null);
 
-		$this->out(__d('Auditable', 'Droping fields'));
-		$this->out('');
+		$changes = array('add' => array());
 
-		foreach($models as $modelName)
-		{
-			$_model = ClassRegistry::init($modelName);
+		if(!isset($schema['created_by']))
+			$changes[$tableName]['add']['created_by'] = $fieldOptions;
 
-			if(!isset($_model->table) || empty($_model->table) || in_array($_model->table, $this->ignoredTables) || $_model->useDbConfig !== $this->connection)
-				continue;
+		if(!isset($schema['modified_by']))
+			$changes[$tableName]['add']['modified_by'] = $fieldOptions;
 
-			$schema = $_model->schema(true);
+		$sql = $this->db->alterSchema($changes);
 
-			if(empty($schema))
-				continue;
+		if(empty($sql))
+			return null;
 
-			$tableName = $_model->tablePrefix ? $_model->tablePrefix . $_model->table : $_model->table;
+		return (bool)$this->_execute($sql);
+	}
 
-			$changes = array('drop' => array());
+	protected function _remove($schema, $tableName)
+	{
+		$changes = array('drop' => array());
 
-			if(isset($schema['created_by']))
-				$changes[$tableName]['drop']['created_by'] = array();
+		if(isset($schema['created_by']))
+			$changes[$tableName]['drop']['created_by'] = array();
 
-			if(isset($schema['modified_by']))
-				$changes[$tableName]['drop']['modified_by'] = array();
+		if(isset($schema['modified_by']))
+			$changes[$tableName]['drop']['modified_by'] = array();
 
-			$sql = $this->db->alterSchema($changes);
+		$sql = $this->db->alterSchema($changes);
 
-			if(empty($sql))
-				continue;
+		if(empty($sql))
+			return null;
 
-			$status = $this->_execute($sql) ? 'Sucesso' : 'Falha';
-
-			$this->out(sprintf(__d('Auditable', 'Changing table \'%s\': %s'), $tableName, $status));
-		}
-
-		return true;
+		return (bool)$this->_execute($sql);
 	}
 
 	protected function _execute($sql)
@@ -227,7 +213,6 @@ class AuditableShell extends Shell {
 	protected function _getModels()
 	{
 		$models = App::objects('Model');
-
 		$plugins = CakePlugin::loaded();
 
 		foreach($plugins as $plugin)
@@ -246,13 +231,45 @@ class AuditableShell extends Shell {
 			}
 		}
 
+		$out = array();
 		foreach($models as $k => $m)
 		{
 			if(strpos(strtolower($m), 'appmodel') !== false)
-				unset($models[$k]);
+				continue;
+
+			$_model = ClassRegistry::init($m);
+
+			if(!isset($_model->table) || empty($_model->table) || in_array($_model->table, $this->ignoredModels) || $_model->useDbConfig !== $this->connection)
+				continue;
+
+			$schema = $_model->schema(true);
+
+			if(empty($schema))
+				continue;
+
+			$tableName = $_model->tablePrefix ? $_model->tablePrefix . $_model->table : $_model->table;
+
+			$out[$tableName] = $schema;
 		}
 
-		return $models;
+		return $out;
+	}
+
+	protected function _getTables()
+	{
+		$_Schema = new CakeSchema();
+		$database = $_Schema->read();
+
+		$tables = array();
+		foreach($database['tables'] as $tableName => $schema)
+		{
+			if(in_array($tableName, $this->ignoredTables) || empty($tableName) || $tableName === 'missing')
+				continue;
+
+			$tables[$tableName] = $schema;
+		}
+
+		return $tables;
 	}
 
 	protected function _clearCache() {
