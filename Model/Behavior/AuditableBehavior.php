@@ -123,7 +123,7 @@ class AuditableBehavior extends ModelBehavior
 	 *     - created	: string. Nome do campo presente em cada modelo para armazenar quem criou o registro
 	 *     - modified	: string. Nome do campo presente em cada modelo para armazenar quem alterou o registro
 	 */
-	public function setup(&$Model, $config = array())
+	public function setup(Model &$Model, $config = array())
 	{
 		if(!is_array($config) || isset($config[0]))
 			$config = $this->defaults;
@@ -145,7 +145,7 @@ class AuditableBehavior extends ModelBehavior
 	 * @param Model $Model
 	 * @param Model $L
 	 */
-	public function setLogger(&$Model, $L)
+	public function setLogger(Model &$Model, $L)
 	{
 		$this->Logger =& $L;
 	}
@@ -155,7 +155,7 @@ class AuditableBehavior extends ModelBehavior
 	 *
 	 * @param int $responsibleId
 	 */
-	public function setActiveResponsible(&$Model, $responsibleId)
+	public function setActiveResponsible(Model &$Model, $responsibleId)
 	{
 		if(empty($responsibleId))
 			return false;
@@ -170,7 +170,7 @@ class AuditableBehavior extends ModelBehavior
 	 * @param Model $Model
 	 * @return bool
 	 */
-	public function beforeSave(&$Model)
+	public function beforeSave(Model &$Model)
 	{
 		parent::beforeSave($Model);
 
@@ -191,7 +191,7 @@ class AuditableBehavior extends ModelBehavior
 	 * @param bool $created
 	 * @return bool
 	 */
-	public function afterSave(&$Model, $created)
+	public function afterSave(Model &$Model, $created)
 	{
 		parent::afterSave($Model, $created);
 
@@ -208,7 +208,7 @@ class AuditableBehavior extends ModelBehavior
 	 * @param Model $Model
 	 * @param bool $cascade
 	 */
-	public function beforeDelete($Model, $cascade = true)
+	public function beforeDelete(Model $Model, $cascade = true)
 	{
 		parent::beforeDelete($Model, $cascade);
 
@@ -222,7 +222,7 @@ class AuditableBehavior extends ModelBehavior
 	 *
 	 * @param Model $Model
 	 */
-	public function afterDelete($Model)
+	public function afterDelete(Model $Model)
 	{
 		parent::afterDelete($Model);
 
@@ -234,7 +234,7 @@ class AuditableBehavior extends ModelBehavior
 	 *
 	 * @param Model $Model
 	 */
-	public function getAuditableSettings(&$Model, $local = true)
+	public function getAuditableSettings(Model &$Model, $local = true)
 	{
 		if($local === true)
 		{
@@ -256,7 +256,7 @@ class AuditableBehavior extends ModelBehavior
 	 * @param Model $Model
 	 * @param bool $create
 	 */
-	protected function logResponsible(&$Model, $create = true)
+	protected function logResponsible(Model &$Model, $create = true)
 	{
 		if(empty($this->activeResponsibleId))
 			return;
@@ -278,7 +278,7 @@ class AuditableBehavior extends ModelBehavior
 	 *
 	 * @return void
 	 */
-	protected function takeSnapshot(&$Model)
+	protected function takeSnapshot(Model &$Model)
 	{
 		$id = $Model->id;
 
@@ -301,7 +301,7 @@ class AuditableBehavior extends ModelBehavior
 	 * @param Model $Model
 	 * @param string $action
 	 */
-	protected function logQuery(&$Model, $action = 'create')
+	protected function logQuery(Model &$Model, $action = 'create')
 	{
 		// Se não houver modelo configurado para salvar o log, aborta
 		if($this->checkLogModels() === false)
@@ -498,7 +498,7 @@ class AuditableBehavior extends ModelBehavior
 	 *
 	 * @return string 'create' ou 'modify' dependendo da operação
 	 */
-	private function getAction(&$Model)
+	private function getAction(Model &$Model)
 	{
 		$isCreate = true;
 
