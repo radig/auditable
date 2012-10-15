@@ -123,7 +123,7 @@ class AuditableBehavior extends ModelBehavior
 	 *     - created	: string. Nome do campo presente em cada modelo para armazenar quem criou o registro
 	 *     - modified	: string. Nome do campo presente em cada modelo para armazenar quem alterou o registro
 	 */
-	public function setup(Model &$Model, $config = array())
+	public function setup(Model $Model, $config = array())
 	{
 		if(!is_array($config) || isset($config[0]))
 			$config = $this->defaults;
@@ -145,7 +145,7 @@ class AuditableBehavior extends ModelBehavior
 	 * @param Model $Model
 	 * @param Model $L
 	 */
-	public function setLogger(Model &$Model, $L)
+	public function setLogger(Model $Model, $L)
 	{
 		$this->Logger =& $L;
 	}
@@ -155,7 +155,7 @@ class AuditableBehavior extends ModelBehavior
 	 *
 	 * @param int $responsibleId
 	 */
-	public function setActiveResponsible(Model &$Model, $responsibleId)
+	public function setActiveResponsible(Model $Model, $responsibleId)
 	{
 		if(empty($responsibleId))
 			return false;
@@ -170,7 +170,7 @@ class AuditableBehavior extends ModelBehavior
 	 * @param Model $Model
 	 * @return bool
 	 */
-	public function beforeSave(Model &$Model)
+	public function beforeSave(Model $Model)
 	{
 		parent::beforeSave($Model);
 
@@ -191,7 +191,7 @@ class AuditableBehavior extends ModelBehavior
 	 * @param bool $created
 	 * @return bool
 	 */
-	public function afterSave(Model &$Model, $created)
+	public function afterSave(Model $Model, $created)
 	{
 		parent::afterSave($Model, $created);
 
