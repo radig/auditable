@@ -480,7 +480,7 @@ class AuditableBehavior extends ModelBehavior
 
 		if(empty($this->Logger))
 		{
-			$this->Logger =& AuditableConfig::$Logger;
+			$this->Logger = AuditableConfig::$Logger;
 		}
 
 		if(empty($this->QueryLogSource))
