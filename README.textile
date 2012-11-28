@@ -84,6 +84,6 @@ você pode usa-lo de forma isolada ou em conjunto com seu próprio código.
 h2. Observações
 
 * Este behavior requer PHP versão >= 5.3
-* Compatível com CakePHP 2.0 e 2.1
+* Compatível com CakePHP 2.0 à 2.2
 * Consulte o branch 1.3 para à versão com suporte ao CakePHP 1.3 e PHP >= 5.2
 * Consulte os testes incluído no plugin para ver melhor seu funcionamento
