@@ -5,5 +5,7 @@ class LogDetail extends AppModel
 
 	public $useTable = 'log_details';
 
-	public $hasOne = array('Auditable.Logger');
+	public $hasOne = array(
+		'Logger' => array('className' => 'Auditable.Logger')
+	);
 }

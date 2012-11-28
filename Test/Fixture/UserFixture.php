@@ -25,16 +25,13 @@ class UserFixture extends CakeTestFixture {
 	 * @var array
 	 */
 	public $fields = array(
-		'id' => array('type' => 'integer', 'null' => false, 'length' => 11, 'key' => 'primary'),
+		'id' => array('type' => 'integer', 'key' => 'primary'),
 		'username' => array('type'=>'string', 'null' => false, 'default' => null),
 		'email' => array('type'=>'string', 'null' => true, 'default' => null),
 		'created' => array('type'=>'datetime', 'null' => true, 'default' => null),
 		'modified' => array('type'=>'datetime', 'null' => true, 'default' => null),
 		'created_by' => array('type' => 'integer', 'null' => true, 'default' => null),
-		'modified_by' => array('type' => 'integer', 'null' => true, 'default' => null),
-		'indexes' => array(
-			'PRIMARY' => array('column' => 'id', 'unique' => 1)
-		)
+		'modified_by' => array('type' => 'integer', 'null' => true, 'default' => null)
 	);
 
 	/**

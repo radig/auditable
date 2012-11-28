@@ -282,11 +282,11 @@ class AuditableBehavior extends ModelBehavior
 	{
 		$id = $Model->id;
 
-		if(isset($Model->data[$Model->alias]['id']) && !empty($Model->data[$Model->alias]['id']))
-			$id = $Model->data[$Model->alias]['id'];
+		if(isset($Model->data[$Model->alias][$Model->primaryKey]) && !empty($Model->data[$Model->alias][$Model->primaryKey]))
+			$id = $Model->data[$Model->alias][$Model->primaryKey];
 
 		$aux = $Model->find('first', array(
-			'conditions' => array("{$Model->alias}.id" => $id),
+			'conditions' => array("{$Model->alias}.{$Model->primaryKey}" => $id),
 			'recursive' => -1
 			)
 		);

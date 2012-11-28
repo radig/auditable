@@ -19,6 +19,22 @@ if(!class_exists('User'))
 	}
 }
 
+if(!class_exists('Thing'))
+{
+	class Thing extends CakeTestModel
+	{
+		public $callbackData = array();
+
+		public $actsAs = array(
+			'Auditable.Auditable'
+		);
+
+		public $useTable = 'things';
+
+		public $name = 'Thing';
+	}
+}
+
 if(!class_exists('User2'))
 {
 	class User2 extends CakeTestModel
@@ -61,26 +77,53 @@ class AuditableTest extends CakeTestCase {
 	public $fixtures = array(
 		'plugin.Auditable.logger',
 		'plugin.Auditable.log_detail',
-		'plugin.Auditable.user'
+		'plugin.Auditable.user',
+		'plugin.Auditable.thing'
 	);
 
 	public $Model = null;
 
 	public $Logger = null;
 
-
-	public function startTest()
+	public function setUp()
 	{
 		AuditableConfig::$responsibleId = 0;
 		AuditableConfig::$responsibleModel = 'User';
 
-		$this->Model =& Classregistry::init('User');
-		$this->Logger =& Classregistry::init('Auditable.Logger');
+		$this->Model = Classregistry::init('User');
+		$this->Logger = Classregistry::init('Auditable.Logger');
 
-		AuditableConfig::$Logger =& $this->Logger;
+		AuditableConfig::$Logger = $this->Logger;
+
+		/**
+		 * @hack para corrigir o valor da sequência ligada a chave primária quando utilizando Postgres
+		 */
+		if(is_a($this->Logger->getDataSource(), 'Postgres')) {
+			$ds = $this->Logger->getDataSource();
+
+			// logger fixture
+			$sequence = $ds->value($ds->getSequence($this->Logger->useTable, 'id'));
+			$table = $ds->fullTableName($this->Logger->useTable);
+			$ds->execute("SELECT setval({$sequence}, (SELECT MAX(id) FROM {$table}))");
+
+			// log_detail fixture
+			$sequence = $ds->value($ds->getSequence($this->Logger->LogDetail->useTable, 'id'));
+			$table = $ds->fullTableName($this->Logger->LogDetail->useTable);
+			$ds->execute("SELECT setval({$sequence}, (SELECT MAX(id) FROM {$table}))");
+
+			// user fixture
+			$sequence = $ds->value($ds->getSequence($this->Model->useTable, 'id'));
+			$table = $ds->fullTableName($this->Model->useTable);
+			$ds->execute("SELECT setval({$sequence}, (SELECT MAX(id) FROM {$table}))");
+
+			// thing fixture
+			$sequence = $ds->value($ds->getSequence('things', 'id'));
+			$table = $ds->fullTableName('things');
+			$ds->execute("SELECT setval({$sequence}, (SELECT MAX(id) FROM {$table}))");
+		}
 	}
 
-	public function endTest()
+	public function tearDown()
 	{
 		unset($this->Model);
 		unset($this->Logger);
@@ -136,7 +179,7 @@ class AuditableTest extends CakeTestCase {
 			)
 		);
 
-		$log = $this->Logger->find('first', array('order' => array('id' => 'desc'), 'fields' => array('id')));
+		$log = $this->Logger->find('first', array('order' => array('Logger.id' => 'desc'), 'fields' => array('Logger.id')));
 
 		$result = $this->Logger->get($log['Logger']['id']);
 
@@ -160,7 +203,7 @@ class AuditableTest extends CakeTestCase {
 		$this->assertEqual($result['LogDetail']['difference'], $difference);
 
 		// checa statement
-		$this->assertRegExp('/^INSERT INTO .+ \(`username`\, `email`\, `modified`\, `created`\) VALUES \(\'dotti\'\, \'dotti@radig.com.br\'.*/', $result['LogDetail']['statement']);
+		$this->assertRegExp('/^INSERT INTO .+ \((`|\")username(`|\")\, (`|\")email(`|\")\, (`|\")modified(`|\")\, (`|\")created(`|\")\) VALUES \(\'dotti\'\, \'dotti@radig.com.br\'.*/', $result['LogDetail']['statement']);
 
 		// checa o responsável
 		$this->assertEqual($result['Responsible'], array('id' => null, 'username' => null, 'email' => null, 'created' => null, 'modified' => null, 'created_by' => null, 'modified_by' => null));
@@ -169,6 +212,46 @@ class AuditableTest extends CakeTestCase {
 
 		// checa o "resource"
 		$this->assertEqual($result['User'], array('username' => 'dotti', 'email' => 'dotti@radig.com.br', 'id' => '3', 'created_by' => null, 'modified_by' => null));
+	}
+
+	public function testAddRelatedAuditable()
+	{
+		$this->Model->bindModel(array('hasOne' => array('Thing')), false);
+
+		$this->Model->saveAssociated(
+			array(
+				'User' => array(
+					'username' => 'dotti',
+					'email' => 'dotti@radig.com.br'
+				),
+				'Thing' => array(
+					'name' => 'Another'
+				)
+			)
+		);
+
+		$log = $this->Logger->find('all', array('order' => array('Logger.id' => 'desc'), 'fields' => array('Logger.id')));
+
+		$result1 = $this->Logger->get($log[0]['Logger']['id']); // model Thing
+		$result2 = $this->Logger->get($log[1]['Logger']['id']); // model User
+
+		// ignora dados temporais não relevantes
+		unset($result1['Logger']['created'], $result1['Logger']['modified']);
+		unset($result2['Logger']['created'], $result2['Logger']['modified']);
+
+		$expected = array(
+			'id' => $log[0]['Logger']['id'],
+			'responsible_id' => 0,
+			'model_alias' => 'Thing',
+			'model_id' => 3,
+			'log_detail_id' => 3,
+			'type' => 1
+		);
+
+		$this->assertEqual($result1['Logger'], $expected);
+
+		// checa o "resource"
+		$this->assertEqual($result1['Thing'], array('name' => 'Another', 'id' => '3', 'user_id' => '3'));
 	}
 
 	public function testLogResponsible()
@@ -181,7 +264,7 @@ class AuditableTest extends CakeTestCase {
 			)
 		);
 
-		$log = $this->Logger->find('first', array('order' => array('id' => 'desc'), 'fields' => array('id')));
+		$log = $this->Logger->find('first', array('order' => array('Logger.id' => 'desc'), 'fields' => array('Logger.id')));
 
 		$result = $this->Logger->get($log['Logger']['id']);
 
@@ -193,7 +276,7 @@ class AuditableTest extends CakeTestCase {
 	{
 		$this->Model->delete(2);
 
-		$log = $this->Logger->find('first', array('order' => array('id' => 'desc'), 'fields' => array('id')));
+		$log = $this->Logger->find('first', array('order' => array('Logger.id' => 'desc'), 'fields' => array('Logger.id')));
 
 		$result = $this->Logger->get($log['Logger']['id']);
 
@@ -212,7 +295,7 @@ class AuditableTest extends CakeTestCase {
 			)
 		);
 
-		$log = $this->Logger->find('first', array('order' => array('id' => 'desc'), 'fields' => array('id')));
+		$log = $this->Logger->find('first', array('order' => array('Logger.id' => 'desc'), 'fields' => array('Logger.id')));
 
 		$result = $this->Logger->get($log['Logger']['id']);
 

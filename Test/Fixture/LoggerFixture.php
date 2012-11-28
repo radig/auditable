@@ -25,7 +25,7 @@ class LoggerFixture extends CakeTestFixture {
 	 * @var array
 	 */
 	public $fields = array(
-		'id' => array('type' => 'integer', 'null' => false, 'length' => 11, 'key' => 'primary'),
+		'id' => array('type' => 'integer', 'key' => 'primary'),
 		'responsible_id' => array('type'=>'integer', 'null' => true, 'default' => NULL),
 		'model_alias' => array('type'=>'string', 'null' => false, 'default' => NULL),
 		'model_id' => array('type'=>'integer', 'null' => false, 'default' => NULL),

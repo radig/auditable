@@ -15,6 +15,20 @@ class LoggerTest extends CakeTestCase {
 	{
 		$this->Logger = ClassRegistry::init('Auditable.Logger');
 
+		/**
+		 * @hack para corrigir o valor da sequência ligada a chave primária quando utilizando Postgres
+		 */
+		if(is_a($this->Logger->getDataSource(), 'Postgres')) {
+			$ds = $this->Logger->getDataSource();
+			$sequence = $ds->value($ds->getSequence($this->Logger->useTable, 'id'));
+			$table = $ds->fullTableName($this->Logger->useTable);
+			$ds->execute("SELECT setval({$sequence}, (SELECT MAX(id) FROM {$table}))");
+
+			$sequence = $ds->value($ds->getSequence($this->Logger->LogDetail->useTable, 'id'));
+			$table = $ds->fullTableName($this->Logger->LogDetail->useTable);
+			$ds->execute("SELECT setval({$sequence}, (SELECT MAX(id) FROM {$table}))");
+		}
+
 		AuditableConfig::$responsibleModel = 'Auditable.User';
 	}
 
@@ -45,7 +59,7 @@ class LoggerTest extends CakeTestCase {
 			)
 		);
 
-		$result = $this->Logger->save($toSave);
+		$result = $this->Logger->saveAll($toSave);
 	}
 
 	public function testReadLog()
