@@ -94,7 +94,9 @@ class AuditableTest extends CakeTestCase {
 		$this->Logger = Classregistry::init('Auditable.Logger');
 
 		AuditableConfig::$Logger = $this->Logger;
+	}
 
+	public function startTest($method) {
 		/**
 		 * @hack para corrigir o valor da sequência ligada a chave primária quando utilizando Postgres
 		 */
@@ -180,7 +182,6 @@ class AuditableTest extends CakeTestCase {
 		);
 
 		$log = $this->Logger->find('first', array('order' => array('Logger.id' => 'desc'), 'fields' => array('Logger.id')));
-
 		$result = $this->Logger->get($log['Logger']['id']);
 
 		// ignora dados temporais não relevantes
@@ -195,15 +196,15 @@ class AuditableTest extends CakeTestCase {
 			'type' => 1
 		);
 
-		$this->assertEqual($result['Logger'], $expected);
+		$this->assertEqual($result['Logger'], $expected, 'Registro principal do log está incorreto');
 
 		$difference = call_user_func(AuditableConfig::$serialize, array('username' => 'dotti', 'email' => 'dotti@radig.com.br', 'id' => '3'));
 
 		// checa a diferança
-		$this->assertEqual($result['LogDetail']['difference'], $difference);
+		$this->assertEqual($result['LogDetail']['difference'], $difference, 'Diferença do log está incorreta');
 
 		// checa statement
-		$this->assertRegExp('/^INSERT INTO .+ \((`|\")username(`|\")\, (`|\")email(`|\")\, (`|\")modified(`|\")\, (`|\")created(`|\")\) VALUES \(\'dotti\'\, \'dotti@radig.com.br\'.*/', $result['LogDetail']['statement']);
+		$this->assertRegExp('/^INSERT INTO .+ \((`|\")username(`|\")\, (`|\")email(`|\")\, (`|\")modified(`|\")\, (`|\")created(`|\")\) VALUES \(\'dotti\'\, \'dotti@radig.com.br\'.*/', $result['LogDetail']['statement'], 'Statement SQL está incorreto');
 
 		// checa o responsável
 		$this->assertEqual($result['Responsible'], array('id' => null, 'username' => null, 'email' => null, 'created' => null, 'modified' => null, 'created_by' => null, 'modified_by' => null));
@@ -320,6 +321,9 @@ class AuditableTest extends CakeTestCase {
 		$this->assertEqual($settings['activeResponsibleId'], 2);
 	}
 
+	/**
+	 * @expectedException PHPUnit_Framework_Error
+	 */
 	public function testUsingInvalidModel()
 	{
 		$this->Model->setLogger(new Object());

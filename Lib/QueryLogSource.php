@@ -17,7 +17,6 @@
  * @package radig
  * @subpackage Auditable.Lib
  */
-
 App::uses('Set', 'Utility');
 
 class QueryLogSource {
@@ -43,8 +42,7 @@ class QueryLogSource {
 	 */
 	public function __construct(&$Model = null)
 	{
-		if($Model !== null)
-		{
+		if ($Model !== null) {
 			// Habilita Log das queries
 			$this->enable($Model);
 		}
@@ -91,11 +89,9 @@ class QueryLogSource {
 		$valids = array(); // queries do modelo Model
 		$table = $Model->tablePrefix . $Model->table; // monta nome completo da tabela
 
-		foreach ($queries as $query)
-		{
-			// Guarda apenas queries do modelo atual que não seja SELECT
-			if(strpos($query, $table) !== false && strpos($query, $this->mapActionSql[$action]) !== false)
-			{
+		foreach ($queries as $query) {
+			// Guarda apenas queries do modelo atual que representam a ação executada
+			if (strpos($query, $table) !== false && strpos($query, $this->mapActionSql[$action]) !== false) {
 				$valids[] = $query;
 			}
 		}
@@ -114,15 +110,19 @@ class QueryLogSource {
 		$ds = $Model->getDataSource();
 		$queries = array();
 
-		if(method_exists($ds, 'getLog'))
-		{
+		if (method_exists($ds, 'getLog')) {
 			$log = $ds->getLog(false, false);
 			$diff = Set::diff($log['log'], $this->cachedQueries);
 
 			$this->cachedQueries = $log['log'];
 
-			foreach($diff as $entry)
+			foreach($diff as $entry) {
+				if(empty($entry['affected'])) {
+					continue;
+				}
+
 				$queries[] = $entry['query'];
+			}
 		}
 
 		return $queries;
