@@ -237,7 +237,7 @@ class AuditableBehavior extends ModelBehavior
 	 *
 	 * @param Model $Model
 	 */
-	public function getAuditableSettings(Model &$Model, $local = true)
+	public function getAuditableSettings(Model $Model, $local = true)
 	{
 		if ($local === true) {
 			return $this->settings[$Model->alias];
@@ -258,7 +258,7 @@ class AuditableBehavior extends ModelBehavior
 	 * @param Model $Model
 	 * @param bool $create
 	 */
-	protected function logResponsible(Model &$Model, $create = true)
+	protected function logResponsible(Model $Model, $create = true)
 	{
 		if (empty($this->activeResponsibleId)) {
 			return;
@@ -283,7 +283,7 @@ class AuditableBehavior extends ModelBehavior
 	 *
 	 * @return void
 	 */
-	protected function takeSnapshot(Model &$Model)
+	protected function takeSnapshot(Model $Model)
 	{
 		$id = $Model->id;
 
@@ -307,7 +307,7 @@ class AuditableBehavior extends ModelBehavior
 	 * @param Model $Model
 	 * @param string $action
 	 */
-	protected function logQuery(Model &$Model, $action = 'create')
+	protected function logQuery(Model $Model, $action = 'create')
 	{
 		// Se não houver modelo configurado para salvar o log, aborta
 		if ($this->checkLogModels() === false) {
@@ -315,11 +315,12 @@ class AuditableBehavior extends ModelBehavior
 			return;
 		}
 
-		$diff = $this->getDiff($action, $Model);
+		$diff = $this->getDiff($Model, $action);
 
 		// Caso não haja alterações/registro criado/excluído, não cria log
-		if(empty($diff))
+		if (empty($diff)) {
 			return;
+		}
 
 		$encoded = $this->buildEncodedMessage($action, $diff);
 
@@ -379,7 +380,7 @@ class AuditableBehavior extends ModelBehavior
 
 		$func = 'serialize';
 
-		if(is_callable(AuditableConfig::$serialize)) {
+		if (is_callable(AuditableConfig::$serialize)) {
 			$func = AuditableConfig::$serialize;
 		}
 
@@ -394,7 +395,7 @@ class AuditableBehavior extends ModelBehavior
 	 * @param  string $action 'create'|'modify'|'delete'
 	 * @return string $statement
 	 */
-	private function getQuery($Model, $action)
+	private function getQuery(Model $Model, $action)
 	{
 		$queries = $this->QueryLogSource->getModelQueries($Model, $action);
 		$statement = '';
@@ -410,12 +411,12 @@ class AuditableBehavior extends ModelBehavior
 	 * Recupera a diferença entre o registro antes e após a operação
 	 * do modelo.
 	 *
-	 * @param string $action 'create'|'modify'|'delete'
 	 * @param  Model $Model Referência para o modelo corrente
+	 * @param string $action 'create'|'modify'|'delete'
 	 *
 	 * @return array Campos alterados
 	 */
-	private function getDiff($action, $Model)
+	private function getDiff(Model $Model, $action)
 	{
 		$diff = array();
 
@@ -437,8 +438,9 @@ class AuditableBehavior extends ModelBehavior
 
 		// Remoção dos campos ignorados
 		foreach ($this->settings[$Model->alias]['skip'] as $field) {
-			if(isset($diff[$field]))
+			if (isset($diff[$field])) {
 				unset($diff[$field]);
+			}
 		}
 
 		return $diff;
@@ -507,7 +509,7 @@ class AuditableBehavior extends ModelBehavior
 	 *
 	 * @return string 'create' ou 'modify' dependendo da operação
 	 */
-	private function getAction(Model &$Model)
+	private function getAction(Model $Model)
 	{
 		$isCreate = true;
 

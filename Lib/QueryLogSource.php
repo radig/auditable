@@ -28,7 +28,13 @@ class QueryLogSource {
 	 */
 	private $cachedQueries = array();
 
-	private $mapActionSql = array(
+	/**
+	 * Mapeamento entre as operações e
+	 * as expressões equivalentes no DB
+	 *
+	 * @var array
+	 */
+	protected $mapActionSql = array(
 		'create' => 'INSERT',
 		'modify' => 'UPDATE',
 		'delete' => 'DELETE',
@@ -40,10 +46,9 @@ class QueryLogSource {
 	 *
 	 * @param Model $Model
 	 */
-	public function __construct(&$Model = null)
+	public function __construct(Model $Model = null)
 	{
 		if ($Model !== null) {
-			// Habilita Log das queries
 			$this->enable($Model);
 		}
 	}
@@ -53,7 +58,7 @@ class QueryLogSource {
 	 *
 	 * @return void
 	 */
-	public function disable(&$Model)
+	public function disable(Model $Model)
 	{
 		$Model->getDataSource()->fullDebug = false;
 	}
@@ -63,7 +68,7 @@ class QueryLogSource {
 	 *
 	 * @return void
 	 */
-	public function enable(&$Model)
+	public function enable(Model $Model)
 	{
 		$Model->getDataSource()->fullDebug = true;
 	}
@@ -83,11 +88,11 @@ class QueryLogSource {
 	 *
 	 * @return array
 	 */
-	public function getModelQueries($Model, $action = 'create', $associateds = false)
+	public function getModelQueries(Model $Model, $action = 'create', $associateds = false)
 	{
 		$queries = $this->getCleanLog($Model);
-		$valids = array(); // queries do modelo Model
-		$table = $Model->tablePrefix . $Model->table; // monta nome completo da tabela
+		$valids = array();
+		$table = $Model->tablePrefix . $Model->table;
 
 		foreach ($queries as $query) {
 			// Guarda apenas queries do modelo atual que representam a ação executada
@@ -105,7 +110,7 @@ class QueryLogSource {
 	 *
 	 * @return array
 	 */
-	protected function getCleanLog($Model)
+	protected function getCleanLog(Model $Model)
 	{
 		$ds = $Model->getDataSource();
 		$queries = array();
