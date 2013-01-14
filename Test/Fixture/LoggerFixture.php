@@ -2,8 +2,8 @@
 /**
  * LoggerFixture
  *
- * @package auditable
- * @subpackage auditable.tests.fixtures
+ * @package Auditable
+ * @subpackage Auditable.Test.Fixture
  */
 class LoggerFixture extends CakeTestFixture {
 
@@ -43,7 +43,7 @@ class LoggerFixture extends CakeTestFixture {
 	 */
 	public $records = array(
 		array(
-			'id'  => '1',
+			'id'  => 1,
 			'responsible_id'  => '0',
 			'model_alias' => 'Auditable.User',
 			'model_id' => '1',

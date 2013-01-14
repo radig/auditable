@@ -32,6 +32,12 @@ class LoggerTest extends CakeTestCase {
 		AuditableConfig::$responsibleModel = 'Auditable.User';
 	}
 
+	public function startTest($method)
+	{
+		parent::startTest($method);
+		$this->skipIf(is_a($this->Logger->getDataSource(), 'MongodbSource'), 'Está versão do Plugin não suporta MongodbSource. Tente o AuditableMongoLogger.');
+	}
+
 	public function tearDown()
 	{
 		parent::tearDown();
@@ -128,15 +134,7 @@ class LoggerTest extends CakeTestCase {
 				'created'  => '2012-03-08 15:20:10',
 				'modified'  => '2012-03-08 15:20:10'
 			),
-			'Responsible' => array(
-				'id' => null,
-				'username' => null,
-				'email' => null,
-				'created' => null,
-				'modified' => null,
-				'created_by' => null,
-				'modified_by' => null
-			)
+			'Responsible' => array()
 		);
 
 		$this->assertEqual($result, $expected);
@@ -162,9 +160,7 @@ class LoggerTest extends CakeTestCase {
 				'created'  => '2012-03-08 15:20:10',
 				'modified'  => '2012-03-08 15:20:10'
 			),
-			'Responsible' => array(
-				'name' => ''
-			)
+			'Responsible' => array()
 		);
 
 		$this->assertEqual($result, $expected);
@@ -192,15 +188,7 @@ class LoggerTest extends CakeTestCase {
 				'created'  => '2012-03-08 15:20:10',
 				'modified'  => '2012-03-08 15:20:10'
 			),
-			'Responsible' => array(
-				'id' => null,
-				'username' => null,
-				'email' => null,
-				'created' => null,
-				'modified' => null,
-				'created_by' => null,
-				'modified_by' => null
-			),
+			'Responsible' => array(),
 			'User' => array(
 				'id'  => 1,
 				'username'  => 'userA',

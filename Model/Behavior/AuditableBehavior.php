@@ -512,12 +512,17 @@ class AuditableBehavior extends ModelBehavior
 	private function getAction(Model $Model)
 	{
 		$isCreate = true;
+		$id = null;
 
 		if (isset($Model->data[$Model->alias][$Model->primaryKey]) && !empty($Model->data[$Model->alias][$Model->primaryKey])) {
-			$isCreate = false;
+			$id = $Model->data[$Model->alias][$Model->primaryKey];
 		}
 		elseif (!empty($Model->id)) {
-			$isCreate = false;
+			$id = $Model->id;
+		}
+
+		if($id !== null) {
+			$isCreate = !$Model->exists($id);
 		}
 
 		return $isCreate ? 'create' : 'modify';

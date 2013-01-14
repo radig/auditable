@@ -39,7 +39,7 @@ class UserFixture extends CakeTestFixture {
 	 */
 	public $records = array(
 		array(
-			'id'  => '1',
+			'id'  => 1,
 			'username'  => 'userA',
 			'email' => 'user_a@radig.com.br',
 			'created'  => '2012-03-08 15:20:10',
@@ -48,7 +48,7 @@ class UserFixture extends CakeTestFixture {
 			'modified_by' => null,
 		),
 		array(
-			'id'  => '2',
+			'id'  => 2,
 			'username'  => 'userB',
 			'email' => 'user_b@radig.com.br',
 			'created'  => '2012-03-08 15:22:26',
