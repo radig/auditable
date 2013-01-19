@@ -481,6 +481,10 @@ class AuditableBehavior extends ModelBehavior
 	 */
 	private function checkLogModels()
 	{
+		if (empty($this->Logger) && !empty(AuditableConfig::$Logger)) {
+			$this->Logger = AuditableConfig::$Logger;
+		}
+
 		if (!($this->Logger instanceof Model)) {
 			return false;
 		}
