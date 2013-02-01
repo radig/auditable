@@ -15,7 +15,27 @@ class LoggerTest extends CakeTestCase {
 	{
 		$this->Logger = ClassRegistry::init('Auditable.Logger');
 
+		/**
+		 * @hack para corrigir o valor da sequência ligada a chave primária quando utilizando Postgres
+		 */
+		if(is_a($this->Logger->getDataSource(), 'Postgres')) {
+			$ds = $this->Logger->getDataSource();
+			$sequence = $ds->value($ds->getSequence($this->Logger->useTable, 'id'));
+			$table = $ds->fullTableName($this->Logger->useTable);
+			$ds->execute("SELECT setval({$sequence}, (SELECT MAX(id) FROM {$table}))");
+
+			$sequence = $ds->value($ds->getSequence($this->Logger->LogDetail->useTable, 'id'));
+			$table = $ds->fullTableName($this->Logger->LogDetail->useTable);
+			$ds->execute("SELECT setval({$sequence}, (SELECT MAX(id) FROM {$table}))");
+		}
+
 		AuditableConfig::$responsibleModel = 'Auditable.User';
+	}
+
+	public function startTest($method)
+	{
+		parent::startTest($method);
+		$this->skipIf(is_a($this->Logger->getDataSource(), 'MongodbSource'), 'Está versão do Plugin não suporta MongodbSource. Tente o AuditableMongoLogger.');
 	}
 
 	public function tearDown()
@@ -45,7 +65,7 @@ class LoggerTest extends CakeTestCase {
 			)
 		);
 
-		$result = $this->Logger->save($toSave);
+		$result = $this->Logger->saveAll($toSave);
 	}
 
 	public function testReadLog()
@@ -114,15 +134,7 @@ class LoggerTest extends CakeTestCase {
 				'created'  => '2012-03-08 15:20:10',
 				'modified'  => '2012-03-08 15:20:10'
 			),
-			'Responsible' => array(
-				'id' => null,
-				'username' => null,
-				'email' => null,
-				'created' => null,
-				'modified' => null,
-				'created_by' => null,
-				'modified_by' => null
-			)
+			'Responsible' => array()
 		);
 
 		$this->assertEqual($result, $expected);
@@ -148,9 +160,7 @@ class LoggerTest extends CakeTestCase {
 				'created'  => '2012-03-08 15:20:10',
 				'modified'  => '2012-03-08 15:20:10'
 			),
-			'Responsible' => array(
-				'name' => ''
-			)
+			'Responsible' => array()
 		);
 
 		$this->assertEqual($result, $expected);
@@ -178,15 +188,7 @@ class LoggerTest extends CakeTestCase {
 				'created'  => '2012-03-08 15:20:10',
 				'modified'  => '2012-03-08 15:20:10'
 			),
-			'Responsible' => array(
-				'id' => null,
-				'username' => null,
-				'email' => null,
-				'created' => null,
-				'modified' => null,
-				'created_by' => null,
-				'modified_by' => null
-			),
+			'Responsible' => array(),
 			'User' => array(
 				'id'  => 1,
 				'username'  => 'userA',

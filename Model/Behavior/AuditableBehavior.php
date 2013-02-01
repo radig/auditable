@@ -106,7 +106,7 @@ class AuditableBehavior extends ModelBehavior
 		parent::__construct();
 
 		$this->activeResponsibleId =& AuditableConfig::$responsibleId;
-		$this->Logger =& AuditableConfig::$Logger;
+		$this->Logger = AuditableConfig::$Logger;
 		$this->QueryLogSource = new QueryLogSource();
 	}
 
@@ -125,16 +125,17 @@ class AuditableBehavior extends ModelBehavior
 	 */
 	public function setup(Model $Model, $config = array())
 	{
-		if(!is_array($config) || isset($config[0]))
+		if (!is_array($config) || isset($config[0])) {
 			$config = $this->defaults;
+		}
 
-		if(isset($config['priority']))
+		if (isset($config['priority'])) {
 			unset($config['priority']);
+		}
 
 		$this->settings[$Model->alias] = array_merge($this->defaults, $config);
 
-		if($this->settings[$Model->alias]['auditSql'])
-		{
+		if ($this->settings[$Model->alias]['auditSql']) {
 			$this->QueryLogSource->enable($Model);
 		}
 	}
@@ -145,9 +146,9 @@ class AuditableBehavior extends ModelBehavior
 	 * @param Model $Model
 	 * @param Model $L
 	 */
-	public function setLogger(Model $Model, $L)
+	public function setLogger(Model $Model, Model $L)
 	{
-		$this->Logger =& $L;
+		$this->Logger = $L;
 	}
 
 	/**
@@ -157,8 +158,9 @@ class AuditableBehavior extends ModelBehavior
 	 */
 	public function setActiveResponsible(Model $Model, $responsibleId)
 	{
-		if(empty($responsibleId))
+		if (empty($responsibleId)) {
 			return false;
+		}
 
 		$this->activeResponsibleId = $responsibleId;
 
@@ -178,8 +180,9 @@ class AuditableBehavior extends ModelBehavior
 
 		$this->logResponsible($Model, $action === 'create');
 
-		if($action === 'modify')
+		if ($action === 'modify') {
 			$this->takeSnapshot($Model);
+		}
 
 		return true;
 	}
@@ -234,10 +237,9 @@ class AuditableBehavior extends ModelBehavior
 	 *
 	 * @param Model $Model
 	 */
-	public function getAuditableSettings(Model &$Model, $local = true)
+	public function getAuditableSettings(Model $Model, $local = true)
 	{
-		if($local === true)
-		{
+		if ($local === true) {
 			return $this->settings[$Model->alias];
 		}
 
@@ -256,19 +258,22 @@ class AuditableBehavior extends ModelBehavior
 	 * @param Model $Model
 	 * @param bool $create
 	 */
-	protected function logResponsible(Model &$Model, $create = true)
+	protected function logResponsible(Model $Model, $create = true)
 	{
-		if(empty($this->activeResponsibleId))
+		if (empty($this->activeResponsibleId)) {
 			return;
+		}
 
 		$createdByField = $this->settings[$Model->alias]['fields']['created'];
 		$modifiedByField = $this->settings[$Model->alias]['fields']['modified'];
 
-		if($create && $Model->schema($createdByField) !== null)
+		if ($create && $Model->schema($createdByField) !== null) {
 			$Model->data[$Model->alias][$createdByField] = $this->activeResponsibleId;
+		}
 
-		if(!$create && $Model->schema($modifiedByField) !== null)
+		if (!$create && $Model->schema($modifiedByField) !== null) {
 			$Model->data[$Model->alias][$modifiedByField] = $this->activeResponsibleId;
+		}
 	}
 
 	/**
@@ -278,15 +283,16 @@ class AuditableBehavior extends ModelBehavior
 	 *
 	 * @return void
 	 */
-	protected function takeSnapshot(Model &$Model)
+	protected function takeSnapshot(Model $Model)
 	{
 		$id = $Model->id;
 
-		if(isset($Model->data[$Model->alias]['id']) && !empty($Model->data[$Model->alias]['id']))
-			$id = $Model->data[$Model->alias]['id'];
+		if (isset($Model->data[$Model->alias][$Model->primaryKey]) && !empty($Model->data[$Model->alias][$Model->primaryKey])) {
+			$id = $Model->data[$Model->alias][$Model->primaryKey];
+		}
 
 		$aux = $Model->find('first', array(
-			'conditions' => array("{$Model->alias}.id" => $id),
+			'conditions' => array("{$Model->alias}.{$Model->primaryKey}" => $id),
 			'recursive' => -1
 			)
 		);
@@ -301,20 +307,20 @@ class AuditableBehavior extends ModelBehavior
 	 * @param Model $Model
 	 * @param string $action
 	 */
-	protected function logQuery(Model &$Model, $action = 'create')
+	protected function logQuery(Model $Model, $action = 'create')
 	{
 		// Se não houver modelo configurado para salvar o log, aborta
-		if($this->checkLogModels() === false)
-		{
+		if ($this->checkLogModels() === false) {
 			CakeLog::write(LOG_WARNING, __d('auditable', 'You need to define AuditableConfig::$Logger'));
 			return;
 		}
 
-		$diff = $this->getDiff($action, $Model);
+		$diff = $this->getDiff($Model, $action);
 
 		// Caso não haja alterações/registro criado/excluído, não cria log
-		if(empty($diff))
+		if (empty($diff)) {
 			return;
+		}
 
 		$encoded = $this->buildEncodedMessage($action, $diff);
 
@@ -336,8 +342,9 @@ class AuditableBehavior extends ModelBehavior
 		$this->QueryLogSource->disable($this->Logger);
 
 		// Salva a entrada nos logs. Caso haja falha, usa o Log default do Cake para registrar a falha
-		if($this->Logger->saveAssociated($toSave) === false)
+		if ($this->Logger->saveAssociated($toSave) === false) {
 			CakeLog::write(LOG_WARNING, sprintf(__d('auditable', "Can't save log entry for statement: \"%s'\""), $statement));
+		}
 
 		$this->QueryLogSource->enable($this->Logger);
 	}
@@ -357,8 +364,7 @@ class AuditableBehavior extends ModelBehavior
 	{
 		$encode = array();
 
-		switch($action)
-		{
+		switch ($action) {
 			case 'modify':
 				foreach($data as $field => $changes)
 					$encode[$field] = $changes;
@@ -374,8 +380,9 @@ class AuditableBehavior extends ModelBehavior
 
 		$func = 'serialize';
 
-		if(is_callable(AuditableConfig::$serialize))
+		if (is_callable(AuditableConfig::$serialize)) {
 			$func = AuditableConfig::$serialize;
+		}
 
 		return call_user_func($func, $encode);
 	}
@@ -388,13 +395,14 @@ class AuditableBehavior extends ModelBehavior
 	 * @param  string $action 'create'|'modify'|'delete'
 	 * @return string $statement
 	 */
-	private function getQuery($Model, $action)
+	private function getQuery(Model $Model, $action)
 	{
 		$queries = $this->QueryLogSource->getModelQueries($Model, $action);
 		$statement = '';
 
-		if(!empty($queries))
+		if (!empty($queries)) {
 			$statement = implode(";\n", $queries);
+		}
 
 		return $statement;
 	}
@@ -403,17 +411,16 @@ class AuditableBehavior extends ModelBehavior
 	 * Recupera a diferença entre o registro antes e após a operação
 	 * do modelo.
 	 *
-	 * @param string $action 'create'|'modify'|'delete'
 	 * @param  Model $Model Referência para o modelo corrente
+	 * @param string $action 'create'|'modify'|'delete'
 	 *
 	 * @return array Campos alterados
 	 */
-	private function getDiff($action, $Model)
+	private function getDiff(Model $Model, $action)
 	{
 		$diff = array();
 
-		switch($action)
-		{
+		switch ($action) {
 			case 'create':
 				if(isset($Model->data[$Model->alias]))
 					$diff = $Model->data[$Model->alias];
@@ -430,10 +437,10 @@ class AuditableBehavior extends ModelBehavior
 		}
 
 		// Remoção dos campos ignorados
-		foreach($this->settings[$Model->alias]['skip'] as $field)
-		{
-			if(isset($diff[$field]))
+		foreach ($this->settings[$Model->alias]['skip'] as $field) {
+			if (isset($diff[$field])) {
 				unset($diff[$field]);
+			}
 		}
 
 		return $diff;
@@ -455,10 +462,10 @@ class AuditableBehavior extends ModelBehavior
 		$diff = Set::diff($old, $new);
 		$formatted = array();
 
-		foreach($diff as $key => $value)
-		{
-			if(!isset($old[$key]) || !isset($new[$key]))
+		foreach ($diff as $key => $value) {
+			if (!isset($old[$key]) || !isset($new[$key])) {
 				continue;
+			}
 
 			$formatted[$key] = array('old' => $old[$key], 'new' => $new[$key]);
 		}
@@ -474,17 +481,25 @@ class AuditableBehavior extends ModelBehavior
 	 */
 	private function checkLogModels()
 	{
-		if(!($this->Logger instanceof Model))
-			return false;
+		if (empty($this->Logger) && !empty(AuditableConfig::$Logger)) {
+			$this->Logger = AuditableConfig::$Logger;
+		}
 
-		if($this->Logger->Behaviors->attached('Auditable'))
+		if (!($this->Logger instanceof Model)) {
+			return false;
+		}
+
+		if ($this->Logger->Behaviors->attached('Auditable')) {
 			$this->Logger->Behaviors->unload('Auditable');
+		}
 
-		if(!isset($this->Logger->LogDetail))
+		if (!isset($this->Logger->LogDetail)) {
 			return false;
+		}
 
-		if($this->Logger->LogDetail->Behaviors->attached('Auditable'))
+		if ($this->Logger->LogDetail->Behaviors->attached('Auditable')) {
 			$this->Logger->LogDetail->Behaviors->unload('Auditable');
+		}
 
 		return true;
 	}
@@ -498,15 +513,21 @@ class AuditableBehavior extends ModelBehavior
 	 *
 	 * @return string 'create' ou 'modify' dependendo da operação
 	 */
-	private function getAction(Model &$Model)
+	private function getAction(Model $Model)
 	{
 		$isCreate = true;
+		$id = null;
 
-		if(isset($Model->data[$Model->alias][$Model->primaryKey]) && !empty($Model->data[$Model->alias][$Model->primaryKey]))
-			$isCreate = false;
+		if (isset($Model->data[$Model->alias][$Model->primaryKey]) && !empty($Model->data[$Model->alias][$Model->primaryKey])) {
+			$id = $Model->data[$Model->alias][$Model->primaryKey];
+		}
+		elseif (!empty($Model->id)) {
+			$id = $Model->id;
+		}
 
-		else if(!empty($Model->id))
-			$isCreate = false;
+		if($id !== null) {
+			$isCreate = !$Model->exists($id);
+		}
 
 		return $isCreate ? 'create' : 'modify';
 	}

@@ -18,6 +18,8 @@ App::uses('AuditableConfig', 'Auditable.Lib');
  */
 class Logger extends AppModel
 {
+	public $primaryKey = 'id';
+
 	public $name = 'Logger';
 
 	public $useTable = 'logs';
@@ -97,7 +99,11 @@ class Logger extends AppModel
 
 		if(array_search('Responsible', $contain) === false)
 		{
-			$data['Responsible']['name'] = '';
+			$data['Responsible'] = array();
+		}
+
+		if(isset($this->Responsible) && empty($data['Responsible'][$this->Responsible->primaryKey])) {
+			$data['Responsible'] = array();
 		}
 
 		return $data;
