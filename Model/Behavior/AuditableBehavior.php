@@ -172,9 +172,9 @@ class AuditableBehavior extends ModelBehavior
 	 * @param Model $Model
 	 * @return bool
 	 */
-	public function beforeSave(Model $Model)
+	public function beforeSave(Model $Model, $options = array())
 	{
-		parent::beforeSave($Model);
+		parent::beforeSave($Model, $options);
 
 		$action = $this->getAction($Model);
 
