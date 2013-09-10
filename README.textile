@@ -1,4 +1,4 @@
-h1. CakePHP Auditable !https://travis-ci.org/radig/auditable.png?branch=master(Build Status)!
+h1. CakePHP Auditable !https://travis-ci.org/radig/auditable.png?branch=master(Build Status)!:https://travis-ci.org/radig/auditable
 
 Este plugin inclui funções para tornar a auditoria de sistemas em CakePHP mais simples.
 A ideia central é manter a informação de qual usuário fez o quê, e quando isso foi feito.
@@ -89,13 +89,13 @@ Onde o primeiro parâmetro é a coluna 'difference' do modelo LogDetail e o segu
 
 h2. Autor e Copyright
 
-* *Copyright 2011-2012,* "*Radig - Soluções em TI*":http://www.radig.com.br
+* *Copyright 2011-2013,* "*Radig - Soluções em TI*":http://www.radig.com.br
 * Licença MIT - Isto quer dizer que o código está disponível sem nenhuma garantia, ao mesmo tempo que
 você pode usa-lo de forma isolada ou em conjunto com seu próprio código.
 
 h2. Observações
 
 * Este behavior requer PHP versão >= 5.3
-* Compatível com CakePHP 2.0 à 2.2
+* Compatível com CakePHP 2.x
 * Consulte o branch 1.3 para à versão com suporte ao CakePHP 1.3 e PHP >= 5.2
 * Consulte os testes incluído no plugin para ver melhor seu funcionamento
