@@ -26,12 +26,12 @@ App::uses('CakeLog', 'Log');
  * Licensed under The MIT License
  * Redistributions of files must retain the above copyright notice.
  *
- * @copyright 2011-2013, Radig - Soluções em TI, www.radig.com.br
+ * @copyright Radig - Soluções em TI, www.radig.com.br
  * @link http://www.radig.com.br
  * @license http://www.opensource.org/licenses/mit-license.php The MIT License
  *
- * @package radig
- * @subpackage Auditable.Model.Behavior
+ * @package radig.Auditable
+ * @subpackage Model.Behavior
  */
 class AuditableBehavior extends ModelBehavior
 {
@@ -194,7 +194,7 @@ class AuditableBehavior extends ModelBehavior
 	 * @param bool $created
 	 * @return bool
 	 */
-	public function afterSave(Model $Model, $created)
+	public function afterSave(Model $Model, $created, $options = array())
 	{
 		parent::afterSave($Model, $created);
 
@@ -525,7 +525,7 @@ class AuditableBehavior extends ModelBehavior
 			$id = $Model->id;
 		}
 
-		if(!empty($id)) {
+		if (!empty($id)) {
 			$isCreate = !$Model->exists($id);
 		}
 

@@ -1,4 +1,5 @@
 <?php
+App::uses('Set', 'Utility');
 /**
  * Lib que recupera e permite fazer cache das queries SQL geradas pelo CakePHP.
  *
@@ -10,15 +11,13 @@
  * Licensed under The MIT License
  * Redistributions of files must retain the above copyright notice.
  *
- * @copyright 2011-2012, Radig - Soluções em TI, www.radig.com.br
+ * @copyright Radig - Soluções em TI, www.radig.com.br
  * @link http://www.radig.com.br
  * @license http://www.opensource.org/licenses/mit-license.php The MIT License
  *
- * @package radig
- * @subpackage Auditable.Lib
+ * @package radig.Auditable
+ * @subpackage Lib
  */
-App::uses('Set', 'Utility');
-
 class QueryLogSource {
 
 	/**
@@ -121,8 +120,8 @@ class QueryLogSource {
 
 			$this->cachedQueries = $log['log'];
 
-			foreach($diff as $entry) {
-				if(empty($entry['affected'])) {
+			foreach ($diff as $entry) {
+				if (empty($entry['affected'])) {
 					continue;
 				}
 

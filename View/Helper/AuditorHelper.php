@@ -1,4 +1,6 @@
 <?php
+App::uses('AuditableConfig', 'Auditable.Lib');
+App::uses('String', 'Utility');
 /**
  * Helper para auxiliar na exibição dos logs gravados pelo behavior Auditable.
  *
@@ -10,16 +12,13 @@
  * Licensed under The MIT License
  * Redistributions of files must retain the above copyright notice.
  *
- * @copyright 2011-2012, Radig - Soluções em TI, www.radig.com.br
+ * @copyright Radig - Soluções em TI, www.radig.com.br
  * @link http://www.radig.com.br
  * @license http://www.opensource.org/licenses/mit-license.php The MIT License
  *
- * @package radig
- * @subpackage Auditable.View.Helper
+ * @package radig.Auditable
+ * @subpackage View.Helper
  */
-
-App::uses('AuditableConfig', 'Auditable.Lib');
-App::uses('String', 'Utility');
 class AuditorHelper extends AppHelper
 {
 	/**
@@ -75,8 +74,7 @@ class AuditorHelper extends AppHelper
 	{
 		$func = 'unserialize';
 
-		if(is_callable(AuditableConfig::$unserialize))
-		{
+		if (is_callable(AuditableConfig::$unserialize)) {
 			$func = AuditableConfig::$unserialize;
 		}
 
@@ -89,13 +87,13 @@ class AuditorHelper extends AppHelper
 		$action = $this->typesEnum[$type];
 		$actionMsg = __d('auditable', $this->settings['formats'][$action]);
 
-		switch($type)
-		{
+		switch ($type) {
 			case 2:
 				$placeHolders['action'] = __d('auditable', 'modified');
 
-				foreach($data as $field => $changes)
+				foreach ($data as $field => $changes) {
 					$humanDiff .= $prepend . String::insert($actionMsg, array('field' => $field, 'old' => $changes['old'], 'new' => $changes['new'])) . $pospend;
+				}
 
 				break;
 
@@ -103,11 +101,13 @@ class AuditorHelper extends AppHelper
 				$placeHolders['action'] = __d('auditable', 'created');
 
 			case 3:
-				if(!isset($placeHolders['action']))
+				if (!isset($placeHolders['action'])) {
 					$placeHolders['action'] = __d('auditable', 'deleted');
+				}
 
-				foreach($data as $field => $value)
+				foreach ($data as $field => $value) {
 					$humanDiff .= $prepend . String::insert($actionMsg, compact('field', 'value')) . $pospend;
+				}
 
 				break;
 

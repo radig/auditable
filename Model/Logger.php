@@ -1,5 +1,6 @@
 <?php
 App::uses('AuditableConfig', 'Auditable.Lib');
+App::uses('AppModel', 'Model');
 /**
  * Modelo de Exemplo para persistir os logs em algum meio.
  * Neste caso o modelo utiliza a conexão padrão com o Banco de Dados.
@@ -9,12 +10,12 @@ App::uses('AuditableConfig', 'Auditable.Lib');
  * Licensed under The MIT License
  * Redistributions of files must retain the above copyright notice.
  *
- * @copyright 2011-2012, Radig - Soluções em TI, www.radig.com.br
+ * @copyright Radig - Soluções em TI, www.radig.com.br
  * @link http://www.radig.com.br
  * @license http://www.opensource.org/licenses/mit-license.php The MIT License
  *
- * @package radig
- * @subpackage Auditable.Model
+ * @package radig.Auditable
+ * @subpackage Model
  */
 class Logger extends AppModel
 {
@@ -48,7 +49,7 @@ class Logger extends AppModel
 	);
 
 	/**
-	 *
+	 * Recupera um registro do log e seus detalhes (opcionalmente)
 	 *
 	 * @param int $id
 	 * @param  bool $loadResource
@@ -58,8 +59,7 @@ class Logger extends AppModel
 	{
 		$contain = array('LogDetail');
 
-		if(!empty(AuditableConfig::$responsibleModel))
-		{
+		if (!empty(AuditableConfig::$responsibleModel)) {
 			$this->bindModel(array(
 				'belongsTo' => array(
 					'Responsible' => array(
@@ -81,8 +81,7 @@ class Logger extends AppModel
 
 		$linked = null;
 
-		if($loadResource)
-		{
+		if ($loadResource) {
 			$Resource = ClassRegistry::init($data[$this->alias]['model_alias']);
 
 			$linked = $Resource->find('first', array(
@@ -92,17 +91,15 @@ class Logger extends AppModel
 			);
 		}
 
-		if(!empty($linked))
-		{
+		if (!empty($linked)) {
 			$data[$Resource->alias] = $linked[$Resource->alias];
 		}
 
-		if(array_search('Responsible', $contain) === false)
-		{
+		if (array_search('Responsible', $contain) === false) {
 			$data['Responsible'] = array();
 		}
 
-		if(isset($this->Responsible) && empty($data['Responsible'][$this->Responsible->primaryKey])) {
+		if (isset($this->Responsible) && empty($data['Responsible'][$this->Responsible->primaryKey])) {
 			$data['Responsible'] = array();
 		}
 

@@ -2,15 +2,16 @@
 /**
  * CakePHP Auditable
  *
- * Copyright 2011 - 2012, Radig Soluções em TI
+ * Copyright Radig Soluções em TI
  *
  * Licensed under The MIT License
  * Redistributions of files must retain the above copyright notice.
  *
- * @copyright 2011 - 2012, Radig Soluções em TI
- * @link      http://github.com/radig/auditable
- * @package   Plugn.Auditable
- * @license   MIT License (http://www.opensource.org/licenses/mit-license.php)
+ * @copyright  Radig Soluções em TI, http://radig.com.br
+ * @link       http://github.com/radig/auditable
+ * @license    MIT License (http://www.opensource.org/licenses/mit-license.php)
+ * @package    radig.Auditable
+ * @subpackage Console.Command
  */
 App::uses('Shell', 'Console');
 App::uses('ConnectionManager', 'Model');
@@ -116,8 +117,7 @@ class AuditableShell extends Shell {
 		$this->db->cacheSources = false;
 		$this->db->begin($null);
 
-		if(!isset($this->args[0]) || !in_array($this->args[0], array('insert', 'remove')))
-		{
+		if (!isset($this->args[0]) || !in_array($this->args[0], array('insert', 'remove'))) {
 			$this->out(__d('Auditable', 'Invalid option'));
 			return $this->_displayHelp(null);
 		}
@@ -140,25 +140,25 @@ class AuditableShell extends Shell {
 
 	protected function _run($type)
 	{
-		if(!isset($this->params['force']))
+		if (!isset($this->params['force'])) {
 			$tables = $this->_getModels();
-		else
+		} else {
 			$tables = $this->_getTables();
+		}
 
-		if($type === 'insert')
+		if ($type === 'insert') {
 			$this->out(__d('Auditable', 'Adding fields'));
-		else
+		} else {
 			$this->out(__d('Auditable', 'Droping fields'));
+		}
 
 		$this->out('');
 
-		foreach($tables as $tableName => $schema)
-		{
+		foreach ($tables as $tableName => $schema) {
 
 			$status = $this->{'_' . $type}($schema, $tableName);
 
-			if($status !== null)
-			{
+			if ($status !== null) {
 				$this->out(sprintf(__d('Auditable', 'Changing table \'%s\': %s'), $tableName, $status ? __d('Auditable', 'Success') : __d('Auditable', 'Error')));
 			}
 		}
@@ -170,16 +170,19 @@ class AuditableShell extends Shell {
 
 		$changes = array('add' => array());
 
-		if(!isset($schema['created_by']))
+		if (!isset($schema['created_by'])) {
 			$changes[$tableName]['add']['created_by'] = $fieldOptions;
+		}
 
-		if(!isset($schema['modified_by']))
+		if (!isset($schema['modified_by'])) {
 			$changes[$tableName]['add']['modified_by'] = $fieldOptions;
+		}
 
 		$sql = $this->db->alterSchema($changes);
 
-		if(empty($sql))
+		if (empty($sql)) {
 			return null;
+		}
 
 		return (bool)$this->_execute($sql);
 	}
@@ -188,24 +191,28 @@ class AuditableShell extends Shell {
 	{
 		$changes = array('drop' => array());
 
-		if(isset($schema['created_by']))
+		if (isset($schema['created_by'])) {
 			$changes[$tableName]['drop']['created_by'] = array();
+		}
 
-		if(isset($schema['modified_by']))
+		if (isset($schema['modified_by'])) {
 			$changes[$tableName]['drop']['modified_by'] = array();
+		}
 
 		$sql = $this->db->alterSchema($changes);
 
-		if(empty($sql))
+		if (empty($sql)) {
 			return null;
+		}
 
 		return (bool)$this->_execute($sql);
 	}
 
 	protected function _execute($sql)
 	{
-		if (@$this->db->execute($sql) === false)
+		if (@$this->db->execute($sql) === false) {
 			throw new Exception($this, sprintf(__d('Auditable', 'SQL Error: %s'), $this->db->lastError()));
+		}
 
 		return true;
 	}
@@ -215,37 +222,39 @@ class AuditableShell extends Shell {
 		$models = App::objects('Model');
 		$plugins = CakePlugin::loaded();
 
-		foreach($plugins as $plugin)
-		{
+		foreach ($plugins as $plugin) {
 			$pluginModels = App::objects($plugin . '.Model');
 
-			if(empty($pluginModels))
+			if (empty($pluginModels)) {
 				continue;
+			}
 
-			foreach ($pluginModels as $model)
-			{
-				if(in_array($model, $this->ignoredModels))
+			foreach ($pluginModels as $model) {
+				if (in_array($model, $this->ignoredModels)) {
 					continue;
+				}
 
 				$models[] = $plugin . '.' . $model;
 			}
 		}
 
 		$out = array();
-		foreach($models as $k => $m)
-		{
-			if(strpos(strtolower($m), 'appmodel') !== false)
+		foreach ($models as $k => $m) {
+			if (strpos(strtolower($m), 'appmodel') !== false) {
 				continue;
+			}
 
 			$_model = ClassRegistry::init($m);
 
-			if(!isset($_model->table) || empty($_model->table) || in_array($_model->table, $this->ignoredModels) || $_model->useDbConfig !== $this->connection)
+			if (!isset($_model->table) || empty($_model->table) || in_array($_model->table, $this->ignoredModels) || $_model->useDbConfig !== $this->connection) {
 				continue;
+			}
 
 			$schema = $_model->schema(true);
 
-			if(empty($schema))
+			if (empty($schema)) {
 				continue;
+			}
 
 			$tableName = $_model->tablePrefix ? $_model->tablePrefix . $_model->table : $_model->table;
 
@@ -261,10 +270,10 @@ class AuditableShell extends Shell {
 		$database = $_Schema->read();
 
 		$tables = array();
-		foreach($database['tables'] as $tableName => $schema)
-		{
-			if(in_array($tableName, $this->ignoredTables) || empty($tableName) || $tableName === 'missing')
+		foreach ($database['tables'] as $tableName => $schema) {
+			if (in_array($tableName, $this->ignoredTables) || empty($tableName) || $tableName === 'missing') {
 				continue;
+			}
 
 			$tables[$tableName] = $schema;
 		}
@@ -278,6 +287,7 @@ class AuditableShell extends Shell {
 		foreach ($keys as $key) {
 			Cache::clear(false, $key);
 		}
+
 		ClassRegistry::flush();
 	}
 }
